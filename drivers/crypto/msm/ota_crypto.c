@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2010-2017, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -651,11 +651,10 @@ static ssize_t _debug_stats_read(struct file *file, char __user *buf,
     int qcota = *((int *) file->private_data);
     int len;
 
-    len = _disp_stats(qcota);
-
-    rc = simple_read_from_buffer((void __user *) buf, len,
-	    ppos, (void *) _debug_read_buf, len);
-
+	len = _disp_stats(qcota);
+	if (len <= count)
+		rc = simple_read_from_buffer((void __user *) buf, len,
+			ppos, (void *) _debug_read_buf, len);
     return rc;
 }
 
