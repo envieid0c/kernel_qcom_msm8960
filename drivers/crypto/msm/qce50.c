@@ -692,17 +692,21 @@ static int _aead_complete(struct qce_device *pce_dev)
 
 static void _sha_complete(struct qce_device *pce_dev)
 {
-    struct ahash_request *areq;
-    unsigned char digest[SHA256_DIGEST_SIZE];
+	struct ahash_request *areq;
+	unsigned char digest[SHA256_DIGEST_SIZE];
 
-    areq = (struct ahash_request *) pce_dev->areq;
-    dma_unmap_sg(pce_dev->pdev, areq->src, pce_dev->src_nents,
-		DMA_TO_DEVICE);
-    memcpy(digest, (char *)(&pce_dev->ce_sps.result->auth_iv[0]),
-			SHA256_DIGEST_SIZE);
-    pce_dev->qce_cb(areq, digest,
-	    (char *)pce_dev->ce_sps.result->auth_byte_count,
-		pce_dev->ce_sps.consumer_status);
+	areq = (struct ahash_request *) pce_dev->areq;
+	if (!areq) {
+		pr_err("sha operation error. areq is NULL\n");
+		return -ENXIO;
+	}
+	dma_unmap_sg(pce_dev->pdev, areq->src, pce_dev->src_nents,
+				DMA_TO_DEVICE);
+	memcpy(digest, (char *)(&pce_dev->ce_sps.result->auth_iv[0]),
+						SHA256_DIGEST_SIZE);
+	pce_dev->qce_cb(areq, digest,
+			(char *)pce_dev->ce_sps.result->auth_byte_count,
+				pce_dev->ce_sps.consumer_status);
 };
 
 static int _ablk_cipher_complete(struct qce_device *pce_dev)
