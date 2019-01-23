@@ -119,7 +119,7 @@
 static char *getname_flags(const char __user *filename, int flags, int *empty)
 {
 	char *result = __getname(), *err;
-	int len
+	int len;
 
 	if (unlikely(!result))
 		return ERR_PTR(-ENOMEM);
