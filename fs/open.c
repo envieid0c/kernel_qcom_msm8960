@@ -796,10 +796,8 @@ struct file *finish_open(struct opendata *od, struct dentry *dentry,
 	dget(dentry);
 
 	res = do_dentry_open(dentry, od->mnt, od->filp, open, current_cred());
-	if (!IS_ERR(res)) {
+	if (!IS_ERR(res))
 		*opened |= FILE_OPENED;
-		od->filp = NULL;
-	}
 	return res;
 }
 EXPORT_SYMBOL(finish_open);
