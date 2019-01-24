@@ -118,34 +118,63 @@
  */
 void final_putname(struct filename *name)
 {
-    __putname(name->name);
-    kfree(name);
+    if (name->separate) {
+	__putname(name->name);
+	kfree(name);
+    } else {
+	__putname(name);
+    }
 }
+
+#define EMBEDDED_NAME_MAX	(PATH_MAX - sizeof(struct filename))
 
 static struct filename *
 getname_flags(const char __user *filename, int flags, int *empty)
 {
     struct filename *result, *err;
-    char *kname;
     int len;
+    long max;
+    char *kname;
 
-    /* FIXME: create dedicated slabcache? */
-    result = kzalloc(sizeof(*result), GFP_KERNEL);
+    result = __getname();
     if (unlikely(!result))
 	return ERR_PTR(-ENOMEM);
 
-    kname = __getname();
-    if (unlikely(!kname)) {
-	err = ERR_PTR(-ENOMEM);
-	goto error_free_name;
-    }
-
+    /*
+     * First, try to embed the struct filename inside the names_cache
+     * allocation
+     */
+    kname = (char *)result + sizeof(*result);
     result->name = kname;
-    result->uptr = filename;
-    len = strncpy_from_user(kname, filename, PATH_MAX);
+    result->separate = false;
+    max = EMBEDDED_NAME_MAX;
+
+recopy:
+    len = strncpy_from_user(kname, filename, max);
     if (unlikely(len < 0)) {
 	err = ERR_PTR(len);
 	goto error;
+    }
+
+    /*
+     * Uh-oh. We have a name that's approaching PATH_MAX. Allocate a
+     * separate struct filename so we can dedicate the entire
+     * names_cache allocation for the pathname, and re-do the copy from
+     * userland.
+     */
+    if (len == EMBEDDED_NAME_MAX && max == EMBEDDED_NAME_MAX) {
+	kname = (char *)result;
+
+	result = kzalloc(sizeof(*result), GFP_KERNEL);
+	if (!result) {
+	    err = ERR_PTR(-ENOMEM);
+	    result = (struct filename *)kname;
+	    goto error;
+	}
+	result->name = kname;
+	result->separate = true;
+	max = PATH_MAX;
+	goto recopy;
     }
 
     /* The empty path is special. */
@@ -158,15 +187,15 @@ getname_flags(const char __user *filename, int flags, int *empty)
     }
 
     err = ERR_PTR(-ENAMETOOLONG);
-    if (likely(len < PATH_MAX)) {
-	audit_getname(result);
-	return result;
-    }
+    if (unlikely(len >= PATH_MAX))
+	goto error;
+
+    result->uptr = filename;
+    audit_getname(result);
+    return result;
 
 error:
-    __putname(kname);
-error_free_name:
-    kfree(result);
+    final_putname(result);
     return err;
 }
 
@@ -2010,10 +2039,10 @@ static int filename_lookup(int dfd, struct filename *name,
 {
     int retval = path_lookupat(dfd, name->name, flags | LOOKUP_RCU, nd);
     if (unlikely(retval == -ECHILD))
-	    retval = path_lookupat(dfd, name->name, flags, nd);
+	retval = path_lookupat(dfd, name->name, flags, nd);
     if (unlikely(retval == -ESTALE))
-	    retval = path_lookupat(dfd, name->name,
-					    flags | LOOKUP_REVAL, nd);
+	retval = path_lookupat(dfd, name->name,
+			flags | LOOKUP_REVAL, nd);
 
     if (likely(!retval)) {
 	if (unlikely(!audit_dummy_context())) {
@@ -2027,9 +2056,9 @@ static int filename_lookup(int dfd, struct filename *name,
 static int do_path_lookup(int dfd, const char *name,
 		unsigned int flags, struct nameidata *nd)
 {
-	struct filename filename = { .name = name };
+    struct filename filename = { .name = name };
 
-	return filename_lookup(dfd, &filename, flags, nd);
+    return filename_lookup(dfd, &filename, flags, nd);
 }
 
 /* does lookup, returns the object with parent locked */
@@ -2707,7 +2736,7 @@ out_dput:
  */
 static int do_last(struct nameidata *nd, struct path *path,
 	   struct file *file, const struct open_flags *op,
-	    int *opened, struct filename *name)
+	   int *opened, struct filename *name)
 {
     struct dentry *dir = nd->path.dentry;
     int open_flag = op->open_flag;
@@ -3049,11 +3078,11 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
     if (dentry->d_inode->i_op->follow_link && op->intent & LOOKUP_OPEN)
 	return ERR_PTR(-ELOOP);
 
-    file = path_openat(-1, &filname, &nd, op, flags | LOOKUP_RCU);
+    file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
     if (unlikely(file == ERR_PTR(-ECHILD)))
-	file = path_openat(-1, &filname, &nd, op, flags);
+	file = path_openat(-1, &filename, &nd, op, flags);
     if (unlikely(file == ERR_PTR(-ESTALE)))
-	file = path_openat(-1, &filname, &nd, op, flags | LOOKUP_REVAL);
+	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
     return file;
 }
 
