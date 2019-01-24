@@ -987,16 +987,24 @@ void nfs_force_lookup_revalidate(struct inode *dir)
 }
 
 /*
- * Return the intent data that applies to this particular path component
- *
- * Note that the current set of intents only apply to the very last
- * component of the path and none of them is set before that last
- * component.
+ * A check for whether or not the parent directory has changed.
+ * In the case it has, we assume that the dentries are untrustworthy
+ * and may need to be looked up again.
  */
-static inline unsigned int nfs_lookup_check_intent(unsigned int flags,
-			unsigned int mask)
+static int nfs_check_verifier(struct inode *dir, struct dentry *dentry)
 {
-    return flags & mask;
+    if (IS_ROOT(dentry))
+	return 1;
+    if (NFS_SERVER(dir)->flags & NFS_MOUNT_LOOKUP_CACHE_NONE)
+	return 0;
+    if (!nfs_verify_change_attribute(dir, dentry->d_time))
+	return 0;
+    /* Revalidate nfsi->cache_change_attribute before we declare a match */
+    if (nfs_revalidate_inode(NFS_SERVER(dir), dir) < 0)
+	return 0;
+    if (!nfs_verify_change_attribute(dir, dentry->d_time))
+	return 0;
+    return 1;
 }
 
 /*
@@ -1030,8 +1038,8 @@ int nfs_lookup_verify_inode(struct inode *inode, unsigned int flags)
 	goto out_force;
     /* This is an open(2) */
     if ((flags & LOOKUP_OPEN) && !(server->flags & NFS_MOUNT_NOCTO) &&
-	(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)))
-	    goto out_force;
+        (S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)))
+	goto out_force;
     return 0;
 out_force:
     return __nfs_revalidate_inode(server, inode);
