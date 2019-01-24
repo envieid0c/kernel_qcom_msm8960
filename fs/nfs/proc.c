@@ -226,7 +226,7 @@ static void nfs_free_createdata(const struct nfs_createdata *data)
 
 static int
 nfs_proc_create(struct inode *dir, struct dentry *dentry, struct iattr *sattr,
-		int flags, struct nfs_open_context *ctx)
+		int flags)
 {
 	struct nfs_createdata *data;
 	struct rpc_message msg = {
@@ -296,7 +296,7 @@ out:
 	dprintk("NFS reply mknod: %d\n", status);
 	return status;
 }
-  
+
 static int
 nfs_proc_remove(struct inode *dir, struct qstr *name)
 {
