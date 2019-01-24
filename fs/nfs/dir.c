@@ -1508,7 +1508,7 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
 	struct dentry *parent = NULL;
 	struct inode *inode;
 	struct inode *dir;
-	int openflags, ret = 0;
+	int ret = 0;
 
 	if (nd && (nd->flags & LOOKUP_RCU))
 		return -ECHILD;
@@ -1534,7 +1534,7 @@ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
 		goto no_open_dput;
 	openflags = nd->intent.open.flags;
 	/* We cannot do exclusive creation on a positive dentry */
-	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
+	if (nd && nd->flags & LOOKUP_EXCL)
 		goto no_open_dput;
 
 	/* Let f_op->open() actually open (and revalidate) the file */
@@ -1614,7 +1614,8 @@ static int nfs_create(struct inode *dir, struct dentry *dentry,
 	attr.ia_valid = ATTR_MODE;
 
 	if (nd)
-		open_flags = nd->intent.open.flags;
+		if (nd && !(nd->flags & LOOKUP_EXCL))
+			open_flags = O_CREAT;
 
 	error = NFS_PROTO(dir)->create(dir, dentry, &attr, open_flags);
 	if (error != 0)
