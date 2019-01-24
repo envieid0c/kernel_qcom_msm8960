@@ -2528,8 +2528,9 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
 	    goto out;
 	}
 	if (file->f_path.dentry) {
-	    dput(dentry);
-	    dentry = file->f_path.dentry;
+	    if (create_error && dentry->d_inode == NULL) {
+		error = create_error;
+		goto out;
 	}
 	goto looked_up;
     }
