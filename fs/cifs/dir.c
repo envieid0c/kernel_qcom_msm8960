@@ -161,7 +161,7 @@ int
 static int cifs_do_create(struct inode *inode, struct dentry *direntry,
 			 int xid, struct tcon_link *tlink, unsigned oflags,
 			 umode_t mode, __u32 *oplock, __u16 *fileHandle,
-			 bool *created)
+			 int *created)
 {
 	int rc = -ENOENT;
 	int create_options = CREATE_NOT_DIR;
@@ -310,7 +310,7 @@ disposition = FILE_OVERWRITE_IF;
 				.device	= 0,
 		};
 
-		*created = true;
+		*created |= FILE_CREATED;
 		if (cifs_sb->mnt_cifs_flags & CIFS_MOUNT_SET_UID) {
 			args.uid = (__u64) current_fsuid();
 			if (inode->i_mode & S_ISGID)
@@ -377,7 +377,7 @@ out:
 struct file *
 cifs_atomic_open(struct inode *inode, struct dentry *direntry,
 		struct opendata *od, unsigned oflags, umode_t mode,
-		bool *created)
+		int *created)
 {
 	int rc;
 	int xid;
@@ -424,14 +424,14 @@ cifs_atomic_open(struct inode *inode, struct dentry *direntry,
 	tcon = tlink_tcon(tlink);
 
 	rc = cifs_do_create(inode, direntry, xid, tlink, oflags, mode,
-			    &oplock, &fileHandle, created);
+			    &oplock, &fileHandle, opened);
 
 	if (rc) {
 		filp = ERR_PTR(rc);
 		goto out;
 	}
 
-	filp = finish_open(od, direntry, generic_file_open);
+	filp = finish_open(od, direntry, generic_file_open, opened);
 	if (IS_ERR(filp)) {
 		CIFSSMBClose(xid, tcon, fileHandle);
 		goto out;
@@ -467,7 +467,7 @@ int cifs_create(struct inode *inode, struct dentry *direntry, umode_t mode,
 	struct tcon_link *tlink;
 	__u16 fileHandle;
 	__u32 oplock;
-	bool created = true;
+	int created = FILE_CREATED;
 
 	cFYI(1, "cifs_create parent inode = 0x%p name is: %s and dentry = 0x%p",
 	     inode, direntry->d_name.name, direntry);
