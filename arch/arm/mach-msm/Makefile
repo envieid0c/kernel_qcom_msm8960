@@ -393,5 +393,7 @@ obj-$(CONFIG_DEBUG_FS) += msm_cpr-debug.o
 endif
 obj-$(CONFIG_MSM_CPU_PWRCTL) +=  msm_cpu_pwrctl.o
 
+# HotPlugs #
 obj-$(CONFIG_THUNDERPLUG_CONTROL)	+= thunderplug.o
 obj-$(CONFIG_ZEN_DECISION)		+= msm_zen_decision.o
+obj-$(CONFIG_MSM_SLEEPER)		+= msm_sleeper.o
