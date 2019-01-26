@@ -2306,7 +2306,7 @@ static struct msm_thermal_data msm_thermal_pdata = {
 #ifdef CONFIG_CPU_OVERCLOCK
 	.core_limit_temp_degC = 85,
 #else
-	.core_limit_temp_degC = 80,
+	.core_limit_temp_degC = 70,
 #endif
 	.core_temp_hysteresis_degC = 10,
 	.core_control_mask = 0xe,
