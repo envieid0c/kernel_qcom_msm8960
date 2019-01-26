@@ -399,6 +399,8 @@ obj-$(CONFIG_ZEN_DECISION)		+= msm_zen_decision.o
 obj-$(CONFIG_MSM_SLEEPER)		+= msm_sleeper.o
 obj-$(CONFIG_MSM_HOTPLUG)		+= msm_hotplug.o
 obj-$(CONFIG_INTELLI_PLUG)		+= intelli_plug.o
+obj-$(CONFIG_DYN_HOTPLUG)		+= dyn_hotplug.o
+obj-$(CONFIG_ALUCARD_HOTPLUG)		+= alucard_hotplug.o
 
 # Fast charge
 obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
