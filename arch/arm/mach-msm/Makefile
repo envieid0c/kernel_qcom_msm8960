@@ -397,3 +397,4 @@ obj-$(CONFIG_MSM_CPU_PWRCTL) +=  msm_cpu_pwrctl.o
 obj-$(CONFIG_THUNDERPLUG_CONTROL)	+= thunderplug.o
 obj-$(CONFIG_ZEN_DECISION)		+= msm_zen_decision.o
 obj-$(CONFIG_MSM_SLEEPER)		+= msm_sleeper.o
+obj-$(CONFIG_MSM_HOTPLUG)		+= msm_hotplug.o
