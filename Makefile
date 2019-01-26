@@ -27,7 +27,7 @@ export LC_COLLATE LC_NUMERIC
 #
 # Most importantly: sub-Makefiles should only ever modify files in
 # their own directory. If in some directory we have a dependency on
-# a file in another dir (which doesn't happen often, but it's often
+# a file in another dir (which doesn't happen often, but it's oftenf
 # unavoidable when linking the built-in.o targets which finally
 # turn into vmlinux), we will call a sub make in that other dir, and
 # after that we are sure that everything which is in that other dir
@@ -562,7 +562,12 @@ KBUILD_CFLAGS	+= -Os
 else
 KBUILD_CFLAGS	+= -O3
 endif
-
+ifdef CONFIG_CC_OPTIMIZE_MORE
+KBUILD_CFLAGS += -O3
+endif
+ifdef CONFIG_CC_OPTIMIZE_FAST
+KBUILD_CFLAGS += -Ofast
+endif
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifneq ($(CONFIG_FRAME_WARN),0)
