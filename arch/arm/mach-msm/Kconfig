@@ -1658,9 +1658,15 @@ config MSM_SLEEPER
 	help
 	  Limit max frequency and shut down cores while screen is off
 
+config LOW_CPUCLOCKS
+	bool "Enable ultra low CPU clocks"
+	default y
+	help
+	  Ultra low cpu frequencies enabled for CPU and L2 Cache
+
 config CPU_VOLTAGE_TABLE
 	bool "Enable CPU Voltage Table via sysfs for adjustements"
-	default n
+	default y
 	help
 	  Krait User Votlage Control
 
