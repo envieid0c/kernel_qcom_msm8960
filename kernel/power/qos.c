@@ -489,10 +489,6 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
 		ret = kstrtos32_from_user(buf, count, 16, &value);
 		if (ret)
 			return ret;
-		}
-		value = (s32)lower_32_bits(ulval);
-	} else {
-		return -EINVAL;
 	}
 
 	req = filp->private_data;
