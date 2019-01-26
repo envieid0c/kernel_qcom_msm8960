@@ -398,3 +398,6 @@ obj-$(CONFIG_THUNDERPLUG_CONTROL)	+= thunderplug.o
 obj-$(CONFIG_ZEN_DECISION)		+= msm_zen_decision.o
 obj-$(CONFIG_MSM_SLEEPER)		+= msm_sleeper.o
 obj-$(CONFIG_MSM_HOTPLUG)		+= msm_hotplug.o
+
+# Fast charge
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
