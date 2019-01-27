@@ -1653,10 +1653,10 @@ config ZEN_DECISION
 	  Enable this if you'd like the ability to disable MPDecision.
 
 config MSM_SLEEPER
-	bool "Limit max frequency and shut down cores while screen is off"
+	bool "Limit max frequency while screen is off"
 	default y
 	help
-	  Limit max frequency and shut down cores while screen is off
+	  Limit max frequency while screen is off
 
 config FAST_HOTPLUG
 	bool "Enable fast hotplug"
