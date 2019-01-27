@@ -1425,7 +1425,7 @@ static int parse_audio_mixer_unit(struct mixer_build *state, int unitid, void *r
 {
 	struct uac_mixer_unit_descriptor *desc = raw_desc;
 	struct usb_audio_term iterm;
-	int input_pins=0, num_ins=0, num_outs=;
+	int input_pins=0, num_ins=0, num_outs=0;
 	int pin=0, ich=0, err=0;
 
 	if (desc->bLength < 11 || ! (input_pins = desc->bNrInPins) || ! (num_outs = uac_mixer_unit_bNrChannels(desc))) {
