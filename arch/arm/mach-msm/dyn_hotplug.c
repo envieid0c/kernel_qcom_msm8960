@@ -9,7 +9,7 @@
  *
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+#define pr_fmt(fmt) "dyn_hotplug: " fmt
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -23,20 +23,17 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 
-#define INIT_DELAY		(60 * HZ) /* Initial delay to 60 sec */
-#define DELAY			(HZ / 2)
-#define UP_THRESHOLD		(65)
-#define MIN_ONLINE		(2)
-#define MAX_ONLINE		(4)
-#define DEF_DOWN_TIMER_CNT	(6)	/* 3 secs */
-#define DEF_UP_TIMER_CNT	(2)	/* 1 sec */
+#define DELAY		(HZ / 2)
+#define UP_THRESHOLD	(25)
+#define MIN_ONLINE	(2)
+#define MAX_ONLINE	(4)
+#define DOWN_TIMER_CNT	(10)	/* 5 secs */
+#define UP_TIMER_CNT	(2)	/* 1 sec */
 
 static int enabled;
 static unsigned int up_threshold;
 static unsigned int min_online;
 static unsigned int max_online;
-static unsigned int down_timer_cnt;
-static unsigned int up_timer_cnt;
 
 struct dyn_hp_data {
     unsigned int up_threshold;
@@ -45,8 +42,6 @@ struct dyn_hp_data {
     unsigned int max_online;
     unsigned int down_timer;
     unsigned int up_timer;
-    unsigned int down_timer_cnt;
-    unsigned int up_timer_cnt;
     unsigned int enabled;
     unsigned int saved_min_online;
     struct delayed_work work;
@@ -103,48 +98,31 @@ static inline void up_one(void)
 
     /* All CPUs are online, return */
     if (num_online_cpus() == hp_data->max_online)
-	goto out;
+	return;
 
     cpu = cpumask_next_zero(0, cpu_online_mask);
-    if (cpu < nr_cpu_ids)
+    if (cpu < nr_cpu_ids) {
 	cpu_up(cpu);
-out:
-    hp_data->down_timer = 0;
-    hp_data->up_timer = 0;
+
+	hp_data->down_timer = 0;
+	hp_data->up_timer = 0;
+    }
 }
 
-/* Iterate through online CPUs and take offline the first one */
+/* Iterate through online CPUs and bring online the first one */
 static inline void down_one(void)
 {
     unsigned int cpu;
     unsigned int l_cpu = 0;
     unsigned int l_freq = ~0;
-    unsigned int p_cpu = 0;
-    unsigned int p_thres = 0;
-    bool all_equal = false;
 
     /* Min online CPUs, return */
     if (num_online_cpus() == hp_data->min_online)
-	goto out;
+	return;
 
     get_online_cpus();
-    for_each_online_cpu(cpu) {
-	struct cpufreq_policy *policy;
-	unsigned int thres;
 
-	policy = cpufreq_cpu_get(cpu);
-	thres = policy->util_thres;
-	cpufreq_cpu_put(policy);
-
-	if (!cpu || thres == p_thres) {
-	    p_thres = thres;
-	    p_cpu = cpu;
-	    all_equal = true;
-	} else if (thres > p_thres) {
-	    p_thres = thres;
-	    p_cpu = cpu;
-	    all_equal = false;
-	}
+    for_each_online_cpu(cpu)
 	if (cpu) {
 	    unsigned int cur = cpufreq_quick_get(cpu);
 
@@ -153,14 +131,9 @@ static inline void down_one(void)
 		l_cpu = cpu;
 	    }
 	}
-    }
     put_online_cpus();
 
-    if (all_equal)
-	cpu_down(l_cpu);
-    else
-	cpu_down(p_cpu);
-out:
+    cpu_down(l_cpu);
     hp_data->down_timer = 0;
     hp_data->up_timer = 0;
 }
@@ -176,10 +149,10 @@ static __cpuinit void load_timer(struct work_struct *work)
     unsigned int cpu;
     unsigned int avg_load = 0;
 
-    if (hp_data->down_timer < hp_data->down_timer_cnt)
+    if (hp_data->down_timer < DOWN_TIMER_CNT)
 	hp_data->down_timer++;
 
-    if (hp_data->up_timer < hp_data->up_timer_cnt)
+    if (hp_data->up_timer < UP_TIMER_CNT)
 	hp_data->up_timer++;
 
     for_each_online_cpu(cpu)
@@ -190,9 +163,9 @@ static __cpuinit void load_timer(struct work_struct *work)
 	__func__, avg_load, num_online_cpus(), hp_data->down_timer);
 
     if (avg_load >= hp_data->up_threshold &&
-        hp_data->up_timer >= hp_data->up_timer_cnt)
+		    hp_data->up_timer >= UP_TIMER_CNT)
 	up_one();
-    else if (hp_data->down_timer >= hp_data->down_timer_cnt)
+    else if (hp_data->down_timer >= DOWN_TIMER_CNT)
 	down_one();
 
     schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
@@ -222,7 +195,6 @@ static void dyn_hp_disable(void)
 
 /******************** Module parameters *********************/
 
-/* enabled */
 static __cpuinit int set_enabled(const char *val, const struct kernel_param *kp)
 {
     int ret = 0;
@@ -245,7 +217,6 @@ static struct kernel_param_ops enabled_ops = {
 module_param_cb(enabled, &enabled_ops, &enabled, 0644);
 MODULE_PARM_DESC(enabled, "control dyn_hotplug");
 
-/* up_threshold */
 static int set_up_threshold(const char *val, const struct kernel_param *kp)
 {
     int ret = 0;
@@ -270,7 +241,6 @@ static struct kernel_param_ops up_threshold_ops = {
 
 module_param_cb(up_threshold, &up_threshold_ops, &up_threshold, 0644);
 
-/* min_online */
 static __cpuinit int set_min_online(const char *val,
 			const struct kernel_param *kp)
 {
@@ -300,7 +270,6 @@ static struct kernel_param_ops min_online_ops = {
 
 module_param_cb(min_online, &min_online_ops, &min_online, 0644);
 
-/* max_online */
 static __cpuinit int set_max_online(const char *val,
 			const struct kernel_param *kp)
 {
@@ -331,56 +300,6 @@ static struct kernel_param_ops max_online_ops = {
 
 module_param_cb(max_online, &max_online_ops, &max_online, 0644);
 
-/* down_timer_cnt */
-static int set_down_timer_cnt(const char *val, const struct kernel_param *kp)
-{
-    int ret = 0;
-    unsigned int i;
-
-    ret = kstrtouint(val, 10, &i);
-    if (ret)
-	return -EINVAL;
-    if (i < 1 || i > 50)
-	return -EINVAL;
-
-    ret = param_set_uint(val, kp);
-    if (ret == 0)
-	hp_data->down_timer_cnt = down_timer_cnt;
-    return ret;
-}
-
-static struct kernel_param_ops down_timer_cnt_ops = {
-    .set = set_down_timer_cnt,
-    .get = param_get_uint,
-};
-
-module_param_cb(down_timer_cnt, &down_timer_cnt_ops, &down_timer_cnt, 0644);
-
-/* up_timer_cnt */
-static int set_up_timer_cnt(const char *val, const struct kernel_param *kp)
-{
-    int ret = 0;
-    unsigned int i;
-
-    ret = kstrtouint(val, 10, &i);
-    if (ret)
-	return -EINVAL;
-    if (i < 1 || i > 50)
-	return -EINVAL;
-
-    ret = param_set_uint(val, kp);
-    if (ret == 0)
-	hp_data->up_timer_cnt = up_timer_cnt;
-    return ret;
-}
-
-static struct kernel_param_ops up_timer_cnt_ops = {
-    .set = set_up_timer_cnt,
-    .get = param_get_uint,
-};
-
-module_param_cb(up_timer_cnt, &up_timer_cnt_ops, &up_timer_cnt, 0644);
-
 /***************** end of module parameters *****************/
 
 static int __init dyn_hp_init(void)
@@ -393,25 +312,19 @@ static int __init dyn_hp_init(void)
     hp_data->up_threshold = UP_THRESHOLD;
     hp_data->min_online = MIN_ONLINE;
     hp_data->max_online = MAX_ONLINE;
-    hp_data->down_timer_cnt = DEF_DOWN_TIMER_CNT;
-    hp_data->up_timer_cnt = DEF_UP_TIMER_CNT;
 
     hp_data->suspend.suspend = hp_early_suspend;
     hp_data->suspend.resume =  hp_late_resume;
     hp_data->suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
     hp_data->enabled = 1;
-
     up_threshold = hp_data->up_threshold;
     enabled = hp_data->enabled;
     min_online = hp_data->min_online;
     max_online = hp_data->max_online;
-    down_timer_cnt = hp_data->down_timer_cnt;
-    up_timer_cnt = hp_data->up_timer_cnt;
-
     register_early_suspend(&hp_data->suspend);
 
     INIT_DELAYED_WORK(&hp_data->work, load_timer);
-    schedule_delayed_work_on(0, &hp_data->work, INIT_DELAY);
+    schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
 
     pr_info("%s: activated\n", __func__);
 

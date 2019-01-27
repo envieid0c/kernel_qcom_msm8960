@@ -1658,6 +1658,12 @@ config MSM_SLEEPER
 	help
 	  Limit max frequency and shut down cores while screen is off
 
+config FAST_HOTPLUG
+	bool "Enable fast hotplug"
+	default n
+	help
+	  Kernel based core control.
+
 config LOW_CPUCLOCKS
 	bool "Enable ultra low CPU clocks"
 	default y
