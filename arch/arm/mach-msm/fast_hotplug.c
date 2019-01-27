@@ -485,8 +485,9 @@ static int __init hotplug_init(void)
 
     INIT_DELAYED_WORK(&hotplug_work, hotplug);
 
+/*PLEASE FIX
     register_power_suspend(&hotplug_power_suspend_handler);
-
+*/
     //queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
 
     pr_info(HOTPLUG_INFO_TAG"Fast hotplug succesfully initialized !");

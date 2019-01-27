@@ -18,10 +18,14 @@
 #include <linux/workqueue.h>
 #include <linux/sched.h>
 #include <linux/timer.h>
-#include <linux/earlysuspend.h>
 #include <linux/cpufreq.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+
+#include <linux/moduleparam.h>
+#include <linux/powersuspend.h>
+#include <linux/cpumask.h>
+#include <linux/hrtimer.h>
 
 #define DELAY		(HZ / 2)
 #define UP_THRESHOLD	(25)
@@ -45,7 +49,7 @@ struct dyn_hp_data {
     unsigned int enabled;
     unsigned int saved_min_online;
     struct delayed_work work;
-    struct early_suspend suspend;
+    struct power_suspend suspend;
 } *hp_data;
 
 /*
@@ -74,7 +78,7 @@ static inline void down_all(void)
 	    cpu_down(cpu);
 }
 
-static void hp_early_suspend(struct early_suspend *h)
+static void hp_power_suspend(struct power_suspend *h)
 {
     pr_debug("%s: num_online_cpus: %u\n", __func__, num_online_cpus());
 
@@ -83,7 +87,7 @@ static void hp_early_suspend(struct early_suspend *h)
 }
 
 /* On late resume bring online all CPUs to prevent lags */
-static __cpuinit void hp_late_resume(struct early_suspend *h)
+static __cpuinit void hp_late_resume(struct power_suspend *h)
 {
     pr_debug("%s: num_online_cpus: %u\n", __func__, num_online_cpus());
 
@@ -176,7 +180,7 @@ static void dyn_hp_enable(void)
     if (hp_data->enabled)
 	return;
     schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
-    register_early_suspend(&hp_data->suspend);
+    register_power_suspend(&hp_data->suspend);
     hp_data->enabled = 1;
 }
 
@@ -186,7 +190,7 @@ static void dyn_hp_disable(void)
 	return;
     cancel_delayed_work(&hp_data->work);
     flush_scheduled_work();
-    unregister_early_suspend(&hp_data->suspend);
+    unregister_power_suspend(&hp_data->suspend);
 
     /* Driver is disabled bring online all CPUs unconditionally */
     up_all(false);
@@ -313,15 +317,15 @@ static int __init dyn_hp_init(void)
     hp_data->min_online = MIN_ONLINE;
     hp_data->max_online = MAX_ONLINE;
 
-    hp_data->suspend.suspend = hp_early_suspend;
+    hp_data->suspend.suspend = hp_power_suspend;
     hp_data->suspend.resume =  hp_late_resume;
-    hp_data->suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
+    hp_data->suspend.level = POWER_SUSPEND_LEVEL_BLANK_SCREEN;
     hp_data->enabled = 1;
     up_threshold = hp_data->up_threshold;
     enabled = hp_data->enabled;
     min_online = hp_data->min_online;
     max_online = hp_data->max_online;
-    register_early_suspend(&hp_data->suspend);
+    register_power_suspend(&hp_data->suspend);
 
     INIT_DELAYED_WORK(&hp_data->work, load_timer);
     schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
@@ -335,7 +339,7 @@ static void __exit dyn_hp_exit(void)
 {
     cancel_delayed_work(&hp_data->work);
     flush_scheduled_work();
-    unregister_early_suspend(&hp_data->suspend);
+    unregister_power_suspend(&hp_data->suspend);
 
     kfree(hp_data);
     pr_info("%s: deactivated\n", __func__);
