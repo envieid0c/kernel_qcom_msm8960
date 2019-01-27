@@ -1704,6 +1704,20 @@ config ALUCARD_HOTPLUG
 	help
 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
 
+config MAKO_HOTPLUG
+	bool "Mako Hotplug"
+	default n
+	help
+	  Mako Hotplug: A custom hotplug by fransico franco
+
+config ASMP
+	bool "Multi-core automatic hotplug support"
+	depends on SMP
+	default n
+	help
+	  Automatically hotplugs the multiple cpu cores on and off
+	  based on cpu load and suspend state
+
 config MSM_AVS_HW
 	bool "Enable Adaptive Voltage Scaling (AVS)"
 	default n
