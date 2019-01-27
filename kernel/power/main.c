@@ -488,6 +488,12 @@ static ssize_t autosleep_show(struct kobject *kobj,
 {
 	suspend_state_t state = pm_autosleep_state();
 
+#ifdef CONFIG_HAS_EARLYSUSPEND2
+	if (state == PM_SUSPEND_ON || valid_state(state)) {
+		request_suspend_state(state);
+	}	
+#endif
+
 	if (state == PM_SUSPEND_ON)
 		return sprintf(buf, "off\n");
 
