@@ -270,10 +270,6 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 
 	cpu_hotplug_begin();
 
-	ret = smpboot_prepare(cpu);
-	if (ret)
-		goto out;
-
 	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
 	if (err) {
 		nr_calls--;
@@ -348,6 +344,11 @@ static int __cpuinit _cpu_up(unsigned int cpu, int tasks_frozen)
 		return -EINVAL;
 
 	cpu_hotplug_begin();
+
+	ret = smpboot_prepare(cpu);
+	if (ret)
+		goto out;
+
 	ret = __cpu_notify(CPU_UP_PREPARE | mod, hcpu, -1, &nr_calls);
 	if (ret) {
 		nr_calls--;
