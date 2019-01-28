@@ -30,19 +30,26 @@
 #define AGC2_CONTROL		(char) 0x07
 
 struct amp_cal {
-	u8 dev_type;
-	u8 gain_type;
-	u8 data;
+    u8 dev_type;
+    u8 gain_type;
+    u8 data;
 };
 
 void set_amp_gain(int num);
 
 struct audio_amp_platform_data {
-	int (*enable)(int);
-	int (*power)(bool);
-	char agc_compression_rate;
-	char agc_output_limiter_disable;
-	char agc_fixed_gain;
+    int (*enable)(int);
+    int (*power)(bool);
+    char agc_compression_rate;
+    char agc_output_limiter_disable;
+    char agc_fixed_gain;
+//-- optional
+    char ATK_time;
+    char REL_time;
+    char Hold_time;
+    char Output_limit_level;
+    char Noise_Gate_Threshold;
+    char AGC_Max_Gain;
 };
 
 /* SPK FUNCTION */
