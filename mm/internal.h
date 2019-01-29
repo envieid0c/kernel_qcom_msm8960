@@ -11,8 +11,8 @@
 #ifndef __MM_INTERNAL_H
 #define __MM_INTERNAL_H
 
-unsigned long reclaim_clean_pages_from_list(struct zone *zone,
-					    struct list_head *page_list);
+//unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+//					    struct list_head *page_list);
 
 #include <linux/mm.h>
 
@@ -128,7 +128,8 @@ struct compact_control {
 	int order;			/* order a direct compactor needs */
 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
 	struct zone *zone;
-	bool *contended;		/* True if a lock was contended */
+	bool contended;		/* True if a lock was contended */
+	struct page **page;		/* Page captured of requested size */
 };
 
 unsigned long
