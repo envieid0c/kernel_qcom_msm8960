@@ -11,6 +11,9 @@
 #ifndef __MM_INTERNAL_H
 #define __MM_INTERNAL_H
 
+unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+					    struct list_head *page_list);
+
 #include <linux/mm.h>
 
 void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
@@ -125,6 +128,7 @@ struct compact_control {
 	int order;			/* order a direct compactor needs */
 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
 	struct zone *zone;
+	bool *contended;		/* True if a lock was contended */
 };
 
 unsigned long
