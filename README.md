@@ -22,7 +22,7 @@ This kernel feature is :
 - CPU Hotplug
 : Zen Decision, MPDecision, IntelliPlug, MSM Hotplug, Mako Hotplug, Alucard Hotplug, Thunderplug & AutoSMP
 - GPU
-: Optomize Siple (128Mhz-400Mhz)
+: Optomize Siple (128Mhz-487.5Mhz)
 : Control Screen & Gamma
 - Sound Control 3.0
 - USB Fast Charge (in developing)
