@@ -12,11 +12,12 @@ This kernel feature is :
 - Linux Kernel v3.4.113
 - Compatibility with CM And LineageOS based ROM [Android 8.1+]
 - Added Double Tap 2 Wake Feature (in developing)
-- GPU Governor's 
+- CPU Governor's
 : Alucard, BioShock, Blu Active, Conservative, Dancedance, Darkness, Dynamic Interactive, Hyper, IntelliMM, Interactive, Nigthmare, Pegasus, Perfomance, Powersave, Skuractive, SmartassV2, TripDroid, Userspace & Wheatley
 -  I/O Sched Governor's
 : bfq, cfq, deadline, fifo, fiops, maple, noop, tripdroidzen, vr & zen
-- TCP Module's 
+- CPU Frequency 94Mhz-1512Mhz
+- TCP Module's
 : Bic, Cubic, HighSpeed, HTCP, Hybla, Illinois, IP, Reno, Scalable, Vegas, Veno, Westwood & Yeah
 - Added CPU Voltage Table Control
 - CPU Hotplug
