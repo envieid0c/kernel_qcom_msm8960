@@ -340,11 +340,6 @@ out:
 	return ret;
 }
 
-static void reset_reclaim_mode(struct scan_control *sc)
-{
-	sc->reclaim_mode = RECLAIM_MODE_SINGLE;
-}
-
 static inline int is_page_cache_freeable(struct page *page)
 {
 	/*
@@ -1070,7 +1065,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 
 		switch (__isolate_lru_page(page, mode)) {
 		case 0:
-			mem_cgroup_lru_del(page);
+			mem_cgroup_lru_del_list(page, lru);
 			list_move(&page->lru, dst);
 			nr_taken += hpage_nr_pages(page);
 			break;
@@ -1376,7 +1371,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
 		zone_idx(zone),
 		nr_scanned, nr_reclaimed,
 		priority,
-		trace_shrink_flags(file));
+		trace_shrink_flags(file, 0));
 	return nr_reclaimed;
 }
 
