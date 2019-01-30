@@ -26,6 +26,7 @@ This kernel feature is :
 : Optomize Siple (128Mhz-487.5Mhz)
 : Control Screen & Gamma
 - Sound Control 3.0
+- Dynamic and Asynchronous fsync
 - USB Fast Charge (in developing)
 - Implement Power Efficient Workqueues
 - Dynamic management of dirty page writebacks
