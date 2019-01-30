@@ -35,6 +35,9 @@ struct anon_vma {
 	 * anon_vma if they are the last user on release
 	 */
 	atomic_t refcount;
+#ifdef CONFIG_ZSWAP
+	atomic_t swapra_miss;
+#endif
 
 	/*
 	 * Count of child anon_vmas and VMAs which points to this anon_vma.
