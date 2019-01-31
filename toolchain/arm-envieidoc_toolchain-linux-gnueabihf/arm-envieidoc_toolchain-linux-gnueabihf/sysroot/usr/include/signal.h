@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -56,6 +56,10 @@ typedef __uid_t uid_t;
 #if defined __USE_POSIX199309 || defined __USE_XOPEN_EXTENDED
 # include <bits/types/siginfo_t.h>
 # include <bits/siginfo-consts.h>
+#endif
+
+#ifdef __USE_MISC
+# include <bits/types/sigval_t.h>
 #endif
 
 #ifdef __USE_POSIX199309

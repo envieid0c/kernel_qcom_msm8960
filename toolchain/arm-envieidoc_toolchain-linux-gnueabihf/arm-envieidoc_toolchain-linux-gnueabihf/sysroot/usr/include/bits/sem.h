@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -68,6 +68,7 @@ struct semid_ds
 /* ipcs ctl cmds */
 # define SEM_STAT 18
 # define SEM_INFO 19
+# define SEM_STAT_ANY 20
 
 struct  seminfo
 {

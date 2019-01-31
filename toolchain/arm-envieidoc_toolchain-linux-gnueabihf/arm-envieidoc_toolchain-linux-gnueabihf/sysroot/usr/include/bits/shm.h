@@ -1,4 +1,4 @@
-/* Copyright (C) 1995-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1995-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -68,6 +68,7 @@ struct shmid_ds
 /* ipcs ctl commands */
 # define SHM_STAT 	13
 # define SHM_INFO 	14
+# define SHM_STAT_ANY	15
 
 /* shm_mode upper byte flags */
 # define SHM_DEST	01000	/* segment will be destroyed on last detach */

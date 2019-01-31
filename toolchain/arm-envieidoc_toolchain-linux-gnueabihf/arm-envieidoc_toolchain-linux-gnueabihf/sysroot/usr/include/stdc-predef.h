@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -56,8 +56,5 @@
    - 285 hentaigana
    - 3 additional Zanabazar Square characters */
 #define __STDC_ISO_10646__		201706L
-
-/* We do not support C11 <threads.h>.  */
-#define __STDC_NO_THREADS__		1
 
 #endif

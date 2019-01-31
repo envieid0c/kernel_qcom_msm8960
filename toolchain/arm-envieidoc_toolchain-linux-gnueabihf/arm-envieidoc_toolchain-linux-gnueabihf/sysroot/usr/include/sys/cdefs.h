@@ -1,4 +1,4 @@
-/* Copyright (C) 1992-2017 Free Software Foundation, Inc.
+/* Copyright (C) 1992-2018 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -72,7 +72,12 @@
 
 #else	/* Not GCC.  */
 
-# define __inline		/* No inline functions.  */
+# if (defined __cplusplus						\
+      || (defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L))
+#  define __inline	inline
+# else
+#  define __inline		/* No inline functions.  */
+# endif
 
 # define __THROW
 # define __THROWNL
@@ -102,7 +107,6 @@
 
 /* This is not a typedef so `const __ptr_t' does the right thing.  */
 #define __ptr_t void *
-#define __long_double_t  long double
 
 
 /* C++ needs to know that types and declarations are C, not C++.  */
@@ -369,7 +373,11 @@
 
 /* __restrict is known in EGCS 1.2 and above. */
 #if !__GNUC_PREREQ (2,92)
-# define __restrict	/* Ignore */
+# if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+#  define __restrict	restrict
+# else
+#  define __restrict	/* Ignore */
+# endif
 #endif
 
 /* ISO C99 also allows to declare arrays as non-overlapping.  The syntax is
@@ -396,6 +404,12 @@
 #else
 # define __glibc_unlikely(cond)	(cond)
 # define __glibc_likely(cond)	(cond)
+#endif
+
+#ifdef __has_attribute
+# define __glibc_has_attribute(attr)	__has_attribute (attr)
+#else
+# define __glibc_has_attribute(attr)	0
 #endif
 
 #if (!defined _Noreturn \
@@ -473,17 +487,18 @@
 # define __glibc_macro_warning(msg)
 #endif
 
-/* Support for generic selection (ISO C11) is available in GCC since
-   version 4.9.  Previous versions do not provide generic selection,
-   even though they might set __STDC_VERSION__ to 201112L, when in
-   -std=c11 mode.  Thus, we must check for !defined __GNUC__ when
-   testing __STDC_VERSION__ for generic selection support.
+/* Generic selection (ISO C11) is a C-only feature, available in GCC
+   since version 4.9.  Previous versions do not provide generic
+   selection, even though they might set __STDC_VERSION__ to 201112L,
+   when in -std=c11 mode.  Thus, we must check for !defined __GNUC__
+   when testing __STDC_VERSION__ for generic selection support.
    On the other hand, Clang also defines __GNUC__, so a clang-specific
    check is required to enable the use of generic selection.  */
-#if __GNUC_PREREQ (4, 9) \
-    || __glibc_clang_has_extension (c_generic_selections) \
-    || (!defined __GNUC__ && defined __STDC_VERSION__ \
-	&& __STDC_VERSION__ >= 201112L)
+#if !defined __cplusplus \
+    && (__GNUC_PREREQ (4, 9) \
+	|| __glibc_clang_has_extension (c_generic_selections) \
+	|| (!defined __GNUC__ && defined __STDC_VERSION__ \
+	    && __STDC_VERSION__ >= 201112L))
 # define __HAVE_GENERIC_SELECTION 1
 #else
 # define __HAVE_GENERIC_SELECTION 0
