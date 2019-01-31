@@ -382,6 +382,7 @@ GRAPHITE_FLAGS := -fgraphite -fgraphite-identity -floop-flatten -floop-paralleli
 CFLAGS_MODULO = -fmodulo-sched -fmodulo-sched-allow-regmoves
 KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO) $(GRAPHITE_FLAGS)
 
+GCC5 = -Wno-logical-not-parentheses
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
@@ -389,7 +390,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
 		   -funsafe-math-optimizations \
-		    $(KERNEK_MODS)
+		    $(KERNEK_MODS) $(GCC5)
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=

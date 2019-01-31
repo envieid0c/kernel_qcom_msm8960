@@ -1,0 +1,1 @@
+../../arm-envieidoc_toolchain-linux-musleabihf/sysroot/lib/libitm.spec
