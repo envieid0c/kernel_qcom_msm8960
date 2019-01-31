@@ -390,12 +390,12 @@ static void __ref thunderplug_resume(void)
     pr_info("%s: resume\n", THUNDERPLUG);
 }
 
-static void tplug_resume_work_fn(struct work_struct *work)
+static void __cpuinit tplug_resume_work_fn(struct work_struct *work)
 {
     thunderplug_resume();
 }
 
-static void tplug_work_fn(struct work_struct *work)
+static void __cpuinit tplug_work_fn(struct work_struct *work)
 {
     int i;
     unsigned int load[8], avg_load[8];
