@@ -34,6 +34,8 @@
 #define UPDATE_BUSY_VAL		1000000
 #define UPDATE_BUSY		50
 
+int graphics_boost = 2;
+
 /*
  * Expected delay for post-interrupt processing on A3xx.
  * The delay may be longer, gradually increase the delay
@@ -188,6 +190,8 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 
 
 	trace_kgsl_pwrlevel(device, pwr->active_pwrlevel, pwrlevel->gpu_freq);
+	//graphics_boost
+	graphics_boost = pwr->active_pwrlevel;
 }
 
 EXPORT_SYMBOL(kgsl_pwrctrl_pwrlevel_change);

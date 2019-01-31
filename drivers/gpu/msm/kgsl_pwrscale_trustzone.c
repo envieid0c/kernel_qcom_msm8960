@@ -34,6 +34,8 @@
 #define TZ_GOVERNOR_SIMPLE	2
 #endif
 
+bool go_opt;
+
 struct tz_priv {
 	int governor;
 	struct kgsl_power_stats bin;
@@ -196,6 +198,7 @@ static int simple_governor(struct kgsl_device *device, int idle_stat)
 			}
 		else if (pwr->active_pwrlevel == (pwr->num_pwrlevels - 1))
 			val = 0; /* already @ min, so do nothing */
+		go_opt = true;
 	}
 	return val;
 }
