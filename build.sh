@@ -10,8 +10,8 @@ copy="cp arch/arm/boot/zImage"
 home="/home/envieidoc/kernel"
 
 export ARCH=arm
-#export CROSS_COMPILE=$(pwd)/toolchain/arm-envieiDoc_tc-linux-gnueabihf/bin/arm-envieiDoc_tc-linux-gnueabihf-
-export CROSS_COMPILE=/root/GCC/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+export CROSS_COMPILE=$(pwd)/toolchain/arm-envieiDoc_tc-linux-gnueabihf/bin/arm-envieiDoc_tc-linux-gnueabihf-
+#export CROSS_COMPILE=/root/GCC/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 
 export KBUILD_BUILD_USER="envieiDoc"
 export KBUILD_BUILD_HOST="instance-1"
