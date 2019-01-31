@@ -245,8 +245,10 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = ccache gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer
-HOSTCXXFLAGS = -O3
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer \
+		-ftree-coalesce-vars -ftree-loop-if-convert -ftree-loop-distribution \
+		-fgraphite-identity -floop-nest-optimize -floop-parallelize-all -flto
+HOSTCXXFLAGS = -Ofast
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -347,11 +349,15 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS	= -DMODULE -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 -marm -march=armv7-a -mfpu=neon -ftree-vectorize -mvectorize-with-neon-quad -funroll-loops -mfpu=neon-vfpv4
+MODFLAGS	= -DMODULE -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 \
+		  -marm -march=armv7-a -mfpu=neon -ftree-vectorize -mvectorize-with-neon-quad -mfpu=neon-vfpv4 \
+		  -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange \
+		  -floop-strip-mine -floop-block -floop-nest-optimize -floop-parallelize-all -flto
+
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL	= -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 
+CFLAGS_KERNEL	= -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -365,11 +371,16 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 #
-# AK LINARO OPT
+# LINARO OPT
 #
-CFLAGS_A15 = -march=armv7-a -mtune=cortex-a15 -mfpu=neon-vfpv4 -funsafe-math-optimizations
+#CFLAGS_A15 = -march=armv7-a -mtune=cortex-a15 -mfpu=neon-vfpv4 -funsafe-math-optimizations
+CFLAGS_A15 = -mtune=cortex-a15 -mfpu=neon-vfpv4 -funsafe-math-optimizations
+GRAPHITE_FLAGS := -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all \
+		    -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block \
+		    -ftree-coalesce-vars -ftree-loop-if-convert -ftree-loop-distribution \
+		    -floop-nest-optimize -floop-parallelize-all -flto -mthumb
 CFLAGS_MODULO = -fmodulo-sched -fmodulo-sched-allow-regmoves
-KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO)
+KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO) $(GRAPHITE_FLAGS)
 
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
@@ -377,7 +388,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
-		   -funsafe-math-optimizations
+		   -funsafe-math-optimizations \
+		    $(KERNEK_MODS)
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -571,10 +583,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O3
+KBUILD_CFLAGS	+= -Ofast
 endif
 ifdef CONFIG_CC_OPTIMIZE_MORE
-KBUILD_CFLAGS += -O3
+KBUILD_CFLAGS += -Ofast
 endif
 ifdef CONFIG_CC_OPTIMIZE_FAST
 KBUILD_CFLAGS += -Ofast
