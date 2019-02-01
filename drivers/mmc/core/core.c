@@ -88,7 +88,7 @@ MODULE_PARM_DESC(
 static int mmc_schedule_delayed_work(struct delayed_work *work,
 				     unsigned long delay)
 {
-	return queue_delayed_work(workqueue, work, delay);
+	return mod_delayed_work(workqueue, work, delay);
 }
 
 /*
@@ -296,7 +296,7 @@ void mmc_start_delayed_bkops(struct mmc_card *card)
 		return;
 
 	if (card->bkops_info.sectors_changed <
-	    card->bkops_info.min_sectors_to_queue_delayed_work)
+	    card->bkops_info.min_sectors_to_mod_delayed_work)
 		return;
 
 	pr_debug("%s: %s: queueing delayed_bkops_work\n",
@@ -308,7 +308,7 @@ void mmc_start_delayed_bkops(struct mmc_card *card)
 	 * it was removed from the queue work but not started yet
 	 */
 	card->bkops_info.cancel_delayed_work = false;
-	queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+	mod_delayed_work(system_nrt_wq, &card->bkops_info.dw,
 			   msecs_to_jiffies(
 				   card->bkops_info.delay_ms));
 }

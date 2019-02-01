@@ -1431,7 +1431,7 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
 }
 
 /**
- * queue_delayed_work_on - queue work on specific CPU after delay
+ * mod_delayed_work_on - queue work on specific CPU after delay
  * @cpu: CPU number to execute work on
  * @wq: workqueue to use
  * @dwork: work to queue
@@ -1483,7 +1483,7 @@ EXPORT_SYMBOL_GPL(queue_delayed_work);
  * @dwork: work to queue
  * @delay: number of jiffies to wait before queueing
  *
- * If @dwork is idle, equivalent to queue_delayed_work_on(); otherwise,
+ * If @dwork is idle, equivalent to mod_delayed_work_on(); otherwise,
  * modify @dwork's timer so that it expires after @delay.  If @delay is
  * zero, @work is guaranteed to be scheduled immediately regardless of its
  * current state.

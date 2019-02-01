@@ -165,7 +165,7 @@ static void update_sampling_rate(unsigned int new_rate)
 	    #ifdef CONFIG_CPU_EXYNOS4210
 		mod_delayed_work_on(alucard_cpuinfo->cpu, system_wq, &alucard_cpuinfo->work, usecs_to_jiffies(new_rate));
 	    #else
-		queue_delayed_work_on(alucard_cpuinfo->cpu, system_wq, &alucard_cpuinfo->work, usecs_to_jiffies(new_rate));
+		mod_delayed_work_on(alucard_cpuinfo->cpu, system_wq, &alucard_cpuinfo->work, usecs_to_jiffies(new_rate));
 	    #endif
 	}
 	mutex_unlock(&alucard_cpuinfo->timer_mutex);
@@ -482,7 +482,7 @@ static void do_alucard_timer(struct work_struct *work)
 #ifdef CONFIG_CPU_EXYNOS4210
     mod_delayed_work_on(cpu, system_wq, &alucard_cpuinfo->work, delay);
 #else
-    queue_delayed_work_on(cpu, system_wq, &alucard_cpuinfo->work, delay);
+    mod_delayed_work_on(cpu, system_wq, &alucard_cpuinfo->work, delay);
 #endif
     mutex_unlock(&alucard_cpuinfo->timer_mutex);
 }
@@ -541,7 +541,7 @@ static int cpufreq_governor_alucard(struct cpufreq_policy *policy,
 	mod_delayed_work_on(this_alucard_cpuinfo->cpu, system_wq, &this_alucard_cpuinfo->work, delay);
 #else
 	INIT_DELAYED_WORK_DEFERRABLE(&this_alucard_cpuinfo->work, do_alucard_timer);
-	queue_delayed_work_on(this_alucard_cpuinfo->cpu, system_wq, &this_alucard_cpuinfo->work, delay);
+	mod_delayed_work_on(this_alucard_cpuinfo->cpu, system_wq, &this_alucard_cpuinfo->work, delay);
 #endif
 
 	break;

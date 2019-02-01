@@ -85,7 +85,7 @@
 #define EXPORT_SYMBOL_RSL(x) EXPORT_SYMBOL(x)
 
 
-#define queue_delayed_work_rsl(x, y, z) queue_delayed_work(x, y, z)
+#define mod_delayed_work_rsl(x, y, z) mod_delayed_work(x, y, z)
 #define INIT_DELAYED_WORK_RSL(x, y, z) INIT_DELAYED_WORK(x, y)
 
 #define queue_work_rsl(x, y) queue_work(x, y)

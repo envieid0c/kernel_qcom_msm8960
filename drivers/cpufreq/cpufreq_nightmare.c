@@ -257,7 +257,7 @@ static void update_sampling_rate(unsigned int new_rate)
 	    #ifdef CONFIG_CPU_EXYNOS4210
 		mod_delayed_work_on(nightmare_cpuinfo->cpu, system_wq, &nightmare_cpuinfo->work, usecs_to_jiffies(new_rate));
 	    #else
-		queue_delayed_work_on(nightmare_cpuinfo->cpu, system_wq, &nightmare_cpuinfo->work, usecs_to_jiffies(new_rate));
+		mod_delayed_work_on(nightmare_cpuinfo->cpu, system_wq, &nightmare_cpuinfo->work, usecs_to_jiffies(new_rate));
 	    #endif
 	}
 	mutex_unlock(&nightmare_cpuinfo->timer_mutex);
@@ -746,7 +746,7 @@ static void do_nightmare_timer(struct work_struct *work)
 #ifdef CONFIG_CPU_EXYNOS4210
     mod_delayed_work_on(cpu, system_wq, &nightmare_cpuinfo->work, delay);
 #else
-    queue_delayed_work_on(cpu, system_wq, &nightmare_cpuinfo->work, delay);
+    mod_delayed_work_on(cpu, system_wq, &nightmare_cpuinfo->work, delay);
 #endif
     mutex_unlock(&nightmare_cpuinfo->timer_mutex);
 }
@@ -810,7 +810,7 @@ static int cpufreq_governor_nightmare(struct cpufreq_policy *policy,
 	mod_delayed_work_on(this_nightmare_cpuinfo->cpu, system_wq, &this_nightmare_cpuinfo->work, delay);
 #else
 	INIT_DELAYED_WORK_DEFERRABLE(&this_nightmare_cpuinfo->work, do_nightmare_timer);
-	queue_delayed_work_on(this_nightmare_cpuinfo->cpu, system_wq, &this_nightmare_cpuinfo->work, delay);
+	mod_delayed_work_on(this_nightmare_cpuinfo->cpu, system_wq, &this_nightmare_cpuinfo->work, delay);
 #endif
 
 	break;

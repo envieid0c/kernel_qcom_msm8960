@@ -113,7 +113,7 @@ static void __ref msm_zd_online_all_cpus(struct work_struct *work)
  */
 static void msm_zd_queue_online_work(void)
 {
-    queue_delayed_work(zen_wake_wq, &wake_work,
+    mod_delayed_work(zen_wake_wq, &wake_work,
 	    msecs_to_jiffies(wake_wait_time));
 }
 

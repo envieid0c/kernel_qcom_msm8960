@@ -238,7 +238,7 @@ void afs_put_server(struct afs_server *server)
 	if (atomic_read(&server->usage) == 0) {
 		list_move_tail(&server->grave, &afs_server_graveyard);
 		server->time_of_death = get_seconds();
-		queue_delayed_work(afs_wq, &afs_server_reaper,
+		mod_delayed_work(afs_wq, &afs_server_reaper,
 				   afs_server_timeout * HZ);
 	}
 	spin_unlock(&afs_server_graveyard_lock);
@@ -285,10 +285,10 @@ static void afs_reap_server(struct work_struct *work)
 		expiry = server->time_of_death + afs_server_timeout;
 		if (expiry > now) {
 			delay = (expiry - now) * HZ;
-			if (!queue_delayed_work(afs_wq, &afs_server_reaper,
+			if (!mod_delayed_work(afs_wq, &afs_server_reaper,
 						delay)) {
 				cancel_delayed_work(&afs_server_reaper);
-				queue_delayed_work(afs_wq, &afs_server_reaper,
+				mod_delayed_work(afs_wq, &afs_server_reaper,
 						   delay);
 			}
 			break;
@@ -324,5 +324,5 @@ void __exit afs_purge_servers(void)
 {
 	afs_server_timeout = 0;
 	cancel_delayed_work(&afs_server_reaper);
-	queue_delayed_work(afs_wq, &afs_server_reaper, 0);
+	mod_delayed_work(afs_wq, &afs_server_reaper, 0);
 }

@@ -394,14 +394,14 @@ static void battery_status_poll(struct work_struct *work)
 	}
 
 	/* Schedule next polling */
-	queue_delayed_work(bq27541_battery_work_queue,
+	mod_delayed_work(bq27541_battery_work_queue,
 		&batt_dev->status_poll_work, battery_check_interval*HZ);
 }
 
 static void low_low_battery_check(struct work_struct *work)
 {
 	cancel_delayed_work(&bq27541_device->status_poll_work);
-	queue_delayed_work(bq27541_battery_work_queue,&bq27541_device->status_poll_work, 0.1*HZ);
+	mod_delayed_work(bq27541_battery_work_queue,&bq27541_device->status_poll_work, 0.1*HZ);
 	msleep(2000);
 	enable_irq(bq27541_device->irq_low_battery_detect);
 }
@@ -412,7 +412,7 @@ static irqreturn_t low_battery_detect_isr(int irq, void *dev_id)
 	bq27541_device->low_battery_present = gpio_get_value(bq27541_device->gpio_low_battery_detect);
 	BAT_NOTICE("gpio LL_BAT_T30=%d\n", bq27541_device->low_battery_present);
 	wake_lock_timeout(&bq27541_device->low_battery_wake_lock, 10*HZ);
-	queue_delayed_work(bq27541_battery_work_queue, &bq27541_device->low_low_bat_work, 0.1*HZ);
+	mod_delayed_work(bq27541_battery_work_queue, &bq27541_device->low_low_bat_work, 0.1*HZ);
 	return IRQ_HANDLED;
 }
 
@@ -498,7 +498,7 @@ int bq27541_battery_callback(unsigned usb_cable_state)
 		power_supply_changed(&bq27541_supply[Charger_Type_AC]);
 	}
 	cancel_delayed_work(&bq27541_device->status_poll_work);
-	queue_delayed_work(bq27541_battery_work_queue, &bq27541_device->status_poll_work, 2*HZ);
+	mod_delayed_work(bq27541_battery_work_queue, &bq27541_device->status_poll_work, 2*HZ);
 
 	return 1;
 }
@@ -516,7 +516,7 @@ int bq27541_wireless_callback(unsigned wireless_state)
 	power_supply_changed(&bq27541_supply[Charger_Type_WIRELESS]);
 
 	cancel_delayed_work(&bq27541_device->status_poll_work);
-	queue_delayed_work(bq27541_battery_work_queue,
+	mod_delayed_work(bq27541_battery_work_queue,
 		&bq27541_device->status_poll_work, 2*HZ);
 
 	return 1;
@@ -813,7 +813,7 @@ static int bq27541_probe(struct i2c_client *client,
 
 	bq27541_battery_driver_ready = 1;
 
-	queue_delayed_work(bq27541_battery_work_queue, &bq27541_device->status_poll_work, 15*HZ);
+	mod_delayed_work(bq27541_battery_work_queue, &bq27541_device->status_poll_work, 15*HZ);
 
 	BAT_NOTICE("- %s driver registered\n", client->name);
 
@@ -849,7 +849,7 @@ static int bq27541_suspend(struct i2c_client *client, pm_message_t state)
 static int bq27541_resume(struct i2c_client *client)
 {
 	cancel_delayed_work(&bq27541_device->status_poll_work);
-	queue_delayed_work(bq27541_battery_work_queue,&bq27541_device->status_poll_work, 0.1*HZ);
+	mod_delayed_work(bq27541_battery_work_queue,&bq27541_device->status_poll_work, 0.1*HZ);
 	return 0;
 }
 #endif

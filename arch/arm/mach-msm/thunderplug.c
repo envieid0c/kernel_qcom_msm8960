@@ -168,7 +168,7 @@ static void tplug_input_event(struct input_handle *handle, unsigned int type,
     {
 	if(DEBUG)
 	    pr_info("%s : touch boost\n", THUNDERPLUG);
-	queue_delayed_work_on(0, tplug_boost_wq, &tplug_boost,
+	mod_delayed_work_on(0, tplug_boost_wq, &tplug_boost,
 	    msecs_to_jiffies(0));
     }
 }
@@ -304,7 +304,7 @@ static ssize_t __ref thunderplug_hp_enabled_store(struct kobject *kobj, struct k
     }
 
     if(tplug_hp_enabled == 1 && tplug_hp_enabled != last_val)
-	queue_delayed_work_on(0, tplug_wq, &tplug_work,
+	mod_delayed_work_on(0, tplug_wq, &tplug_work,
 			    msecs_to_jiffies(sampling_time));
 
     return count;
@@ -443,7 +443,7 @@ static void __cpuinit tplug_work_fn(struct work_struct *work)
     }
 
     if(tplug_hp_enabled != 0 && !isSuspended)
-	queue_delayed_work_on(0, tplug_wq, &tplug_work,
+	mod_delayed_work_on(0, tplug_wq, &tplug_work,
 	    msecs_to_jiffies(sampling_time));
     else {
 	if(!isSuspended)
@@ -461,10 +461,10 @@ static int lcd_notifier_callback(struct notifier_block *nb,
        case LCD_EVENT_ON_START:
 	    isSuspended = false;
 	    if(tplug_hp_enabled)
-		queue_delayed_work_on(0, tplug_wq, &tplug_work,
+		mod_delayed_work_on(0, tplug_wq, &tplug_work,
 				msecs_to_jiffies(sampling_time));
 	    else
-		queue_delayed_work_on(0, tplug_resume_wq, &tplug_resume_work,
+		mod_delayed_work_on(0, tplug_resume_wq, &tplug_resume_work,
 	                      msecs_to_jiffies(10));
 	    pr_info("thunderplug : resume called\n");
                break;
@@ -586,7 +586,7 @@ static int __init thunderplug_init(void)
 	INIT_DELAYED_WORK(&tplug_work, tplug_work_fn);
 	INIT_DELAYED_WORK(&tplug_resume_work, tplug_resume_work_fn);
 	INIT_DELAYED_WORK(&tplug_boost, tplug_boost_work_fn);
-	queue_delayed_work_on(0, tplug_wq, &tplug_work,
+	mod_delayed_work_on(0, tplug_wq, &tplug_work,
 	                      msecs_to_jiffies(10));
 
         pr_info("%s: init\n", THUNDERPLUG);

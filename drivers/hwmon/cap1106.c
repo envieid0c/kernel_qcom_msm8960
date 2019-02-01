@@ -367,10 +367,10 @@ static void cap1106_enable_sensor(struct i2c_client *client, int enable)
 			cap1106_write_reg(client, 0x00, reg_value & 0xCE);
 			bSkip_Checking = false;
 			// Time to first conversion is 200ms (Max)
-			queue_delayed_work(data->cap_wq, &data->work,
+			mod_delayed_work(data->cap_wq, &data->work,
 			        msecs_to_jiffies(200));
 			enable_irq(client->irq);
-			queue_delayed_work(data->cap_wq, &data->checking_work,
+			mod_delayed_work(data->cap_wq, &data->checking_work,
 			        msecs_to_jiffies(1000));
 		} else {
 			disable_irq(client->irq);
@@ -464,7 +464,7 @@ static void cap1106_work_function(struct work_struct *work)
 static irqreturn_t cap1106_interrupt_handler(int irq, void *dev)
 {
 	struct cap1106_data *data = i2c_get_clientdata(dev);
-	queue_delayed_work(data->cap_wq, &data->work, 0);
+	mod_delayed_work(data->cap_wq, &data->work, 0);
 	return IRQ_HANDLED;
 }
 
@@ -586,11 +586,11 @@ static void cap1106_checking_work_function(struct work_struct *work)
 				cap1106_write_reg(data->client, 0x31, 0x0A);
 				cap1106_write_reg(data->client, 0x35, 0x0A);
 				is_wood_sensitivity = 0;
-				queue_delayed_work(data->cap_wq, &data->work, 0);
+				mod_delayed_work(data->cap_wq, &data->work, 0);
 			}
 		}
 	}
-	queue_delayed_work(data->cap_wq, &data->checking_work,
+	mod_delayed_work(data->cap_wq, &data->checking_work,
 	        msecs_to_jiffies(1000));
 	mutex_unlock(&cap_mtx);
 }
@@ -679,8 +679,8 @@ static int __devinit cap1106_probe(struct i2c_client *client,
 	data->enable = force_enable;
 	data->overflow_status = 0x0;
 	if (data->enable) {
-		queue_delayed_work(data->cap_wq, &data->work, msecs_to_jiffies(200));
-		queue_delayed_work(data->cap_wq, &data->checking_work,
+		mod_delayed_work(data->cap_wq, &data->work, msecs_to_jiffies(200));
+		mod_delayed_work(data->cap_wq, &data->checking_work,
 				msecs_to_jiffies(1000));
 	} else
 		disable_irq(data->client->irq);

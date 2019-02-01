@@ -113,7 +113,7 @@ static void start_rq_work(void)
 	rq_data->nr_run_wq =
 	    create_singlethread_workqueue("nr_run_avg");
 
-    queue_delayed_work(rq_data->nr_run_wq, &rq_data->work,
+    mod_delayed_work(rq_data->nr_run_wq, &rq_data->work,
 	       msecs_to_jiffies(rq_data->update_rate));
     return;
 }
@@ -172,7 +172,7 @@ static void rq_work_fn(struct work_struct *work)
     rq_data->last_time = cur_time;
 
     if (rq_data->update_rate != 0)
-	queue_delayed_work(rq_data->nr_run_wq, &rq_data->work,
+	mod_delayed_work(rq_data->nr_run_wq, &rq_data->work,
 		   msecs_to_jiffies(rq_data->update_rate));
 
     spin_unlock_irqrestore(&rq_data->lock, flags);
@@ -359,7 +359,7 @@ static void __ref hotplug_work_fn(struct work_struct *work)
 	delay -= jiffies % delay;
     }
 */
-    queue_delayed_work_on(0, alucardhp_wq, &alucard_hotplug_work,
+    mod_delayed_work_on(0, alucardhp_wq, &alucard_hotplug_work,
 			      delay);
 }
 
@@ -449,7 +449,7 @@ static int hotplug_start(void)
     start_rq_work();
 
     INIT_DELAYED_WORK(&alucard_hotplug_work, hotplug_work_fn);
-    queue_delayed_work_on(0, alucardhp_wq, &alucard_hotplug_work,
+    mod_delayed_work_on(0, alucardhp_wq, &alucard_hotplug_work,
 			msecs_to_jiffies(hotplug_tuners_ins.hotplug_sampling_rate));
 
 #if defined(CONFIG_POWERSUSPEND) || \

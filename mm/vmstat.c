@@ -1158,7 +1158,7 @@ int sysctl_stat_interval __read_mostly = HZ;
 static void vmstat_update(struct work_struct *w)
 {
 	refresh_cpu_vm_stats(smp_processor_id());
-	queue_delayed_work(vmstat_wq, &__get_cpu_var(vmstat_work),
+	mod_delayed_work(vmstat_wq, &__get_cpu_var(vmstat_work),
 		round_jiffies_relative(sysctl_stat_interval));
 }
 
@@ -1167,7 +1167,7 @@ static void __cpuinit start_cpu_timer(int cpu)
 	struct delayed_work *work = &per_cpu(vmstat_work, cpu);
 
 	INIT_DELAYED_WORK_DEFERRABLE(work, vmstat_update);
-	queue_delayed_work_on(cpu, vmstat_wq, work, __round_jiffies_relative(HZ, cpu));
+	mod_delayed_work_on(cpu, vmstat_wq, work, __round_jiffies_relative(HZ, cpu));
 }
 
 /*

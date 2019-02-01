@@ -440,7 +440,7 @@ static int touch_ic_init(struct lge_touch_data *ts)
 err_out_retry:
     ts->ic_init_err_cnt++;
     safety_reset(ts);
-    queue_delayed_work(touch_wq, &ts->work_init, msecs_to_jiffies(10));
+    mod_delayed_work(touch_wq, &ts->work_init, msecs_to_jiffies(10));
 
     return 0;
 
@@ -2107,10 +2107,10 @@ static void touch_late_resume(struct early_suspend *h)
 			HRTIMER_MODE_REL);
 
 	if (ts->pdata->role->resume_pwr == POWER_ON)
-	    queue_delayed_work(touch_wq, &ts->work_init,
+	    mod_delayed_work(touch_wq, &ts->work_init,
 		msecs_to_jiffies(ts->pdata->role->booting_delay));
 	else
-	    queue_delayed_work(touch_wq, &ts->work_init, 0);
+	    mod_delayed_work(touch_wq, &ts->work_init, 0);
     }
 }
 #endif	/* early suspend */

@@ -354,7 +354,7 @@ static void afs_vlocation_queue_for_updates(struct afs_vlocation *vl)
 		if (vl->update_at <= xvl->update_at)
 			vl->update_at = xvl->update_at + 1;
 	} else {
-		queue_delayed_work(afs_vlocation_update_worker,
+		mod_delayed_work(afs_vlocation_update_worker,
 				   &afs_vlocation_update,
 				   afs_vlocation_update_timeout * HZ);
 	}
@@ -507,7 +507,7 @@ void afs_put_vlocation(struct afs_vlocation *vl)
 		_debug("buried");
 		list_move_tail(&vl->grave, &afs_vlocation_graveyard);
 		vl->time_of_death = get_seconds();
-		queue_delayed_work(afs_wq, &afs_vlocation_reap,
+		mod_delayed_work(afs_wq, &afs_vlocation_reap,
 				   afs_vlocation_timeout * HZ);
 
 		/* suspend updates on this record */
@@ -561,10 +561,10 @@ static void afs_vlocation_reaper(struct work_struct *work)
 		if (expiry > now) {
 			delay = (expiry - now) * HZ;
 			_debug("delay %lu", delay);
-			if (!queue_delayed_work(afs_wq, &afs_vlocation_reap,
+			if (!mod_delayed_work(afs_wq, &afs_vlocation_reap,
 						delay)) {
 				cancel_delayed_work(&afs_vlocation_reap);
-				queue_delayed_work(afs_wq, &afs_vlocation_reap,
+				mod_delayed_work(afs_wq, &afs_vlocation_reap,
 						   delay);
 			}
 			break;
@@ -615,12 +615,12 @@ void afs_vlocation_purge(void)
 	list_del_init(&afs_vlocation_updates);
 	spin_unlock(&afs_vlocation_updates_lock);
 	cancel_delayed_work(&afs_vlocation_update);
-	queue_delayed_work(afs_vlocation_update_worker,
+	mod_delayed_work(afs_vlocation_update_worker,
 			   &afs_vlocation_update, 0);
 	destroy_workqueue(afs_vlocation_update_worker);
 
 	cancel_delayed_work(&afs_vlocation_reap);
-	queue_delayed_work(afs_wq, &afs_vlocation_reap, 0);
+	mod_delayed_work(afs_wq, &afs_vlocation_reap, 0);
 }
 
 /*
@@ -656,7 +656,7 @@ static void afs_vlocation_updater(struct work_struct *work)
 
 	timeout = vl->update_at - now;
 	if (timeout > 0) {
-		queue_delayed_work(afs_vlocation_update_worker,
+		mod_delayed_work(afs_vlocation_update_worker,
 				   &afs_vlocation_update, timeout * HZ);
 		spin_unlock(&afs_vlocation_updates_lock);
 		_leave(" [nothing]");
@@ -719,7 +719,7 @@ static void afs_vlocation_updater(struct work_struct *work)
 	list_add_tail(&vl->update, &afs_vlocation_updates);
 
 	_debug("timeout %ld", timeout);
-	queue_delayed_work(afs_vlocation_update_worker,
+	mod_delayed_work(afs_vlocation_update_worker,
 			   &afs_vlocation_update, timeout * HZ);
 	spin_unlock(&afs_vlocation_updates_lock);
 	afs_put_vlocation(vl);

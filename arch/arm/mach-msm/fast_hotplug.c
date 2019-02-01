@@ -286,7 +286,7 @@ delay_work:
 	mutex_unlock(&mutex);
 	return;
     }
-    queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
+    mod_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
     mutex_unlock(&mutex);
 }
 
@@ -419,7 +419,7 @@ static int __ref enable_fast_hotplug(const char *val, const struct kernel_param 
 	init_timer(&unboost_timer);
 
 	mod_timer(&unboost_timer, jiffies + msecs_to_jiffies(boost_duration));
-	queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
+	mod_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
 	mutex_unlock(&mutex);
     }
 
@@ -463,7 +463,7 @@ static void hotplug_late_resume(struct power_suspend *h) {
 	plug_in(num_online_cpus());
 	mutex_lock(&mutex);
 	mod_timer(&unboost_timer, jiffies + msecs_to_jiffies(boost_duration));
-	queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(1));
+	mod_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(1));
 	mutex_unlock(&mutex);
     }
 }
@@ -488,7 +488,7 @@ static int __init hotplug_init(void)
 /*PLEASE FIX
     register_power_suspend(&hotplug_power_suspend_handler);
 */
-    //queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
+    //mod_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
 
     pr_info(HOTPLUG_INFO_TAG"Fast hotplug succesfully initialized !");
     return 0;

@@ -1111,7 +1111,7 @@ static void zd_tx_watchdog_handler(struct work_struct *work)
 	/* reset will stop this worker, don't rearm */
 	return;
 out:
-	queue_delayed_work(zd_workqueue, &tx->watchdog_work,
+	mod_delayed_work(zd_workqueue, &tx->watchdog_work,
 			   ZD_TX_WATCHDOG_INTERVAL);
 }
 
@@ -1121,7 +1121,7 @@ void zd_tx_watchdog_enable(struct zd_usb *usb)
 
 	if (!tx->watchdog_enabled) {
 		dev_dbg_f(zd_usb_dev(usb), "\n");
-		queue_delayed_work(zd_workqueue, &tx->watchdog_work,
+		mod_delayed_work(zd_workqueue, &tx->watchdog_work,
 				   ZD_TX_WATCHDOG_INTERVAL);
 		tx->watchdog_enabled = 1;
 	}
@@ -1165,7 +1165,7 @@ void zd_usb_reset_rx_idle_timer(struct zd_usb *usb)
 	struct zd_usb_rx *rx = &usb->rx;
 
 	cancel_delayed_work(&rx->idle_work);
-	queue_delayed_work(zd_workqueue, &rx->idle_work, ZD_RX_IDLE_INTERVAL);
+	mod_delayed_work(zd_workqueue, &rx->idle_work, ZD_RX_IDLE_INTERVAL);
 }
 
 static inline void init_usb_interrupt(struct zd_usb *usb)
