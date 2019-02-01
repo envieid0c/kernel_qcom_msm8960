@@ -50,6 +50,7 @@ config ANDROID_PERSISTENT_RAM
 	select REED_SOLOMON
 	select REED_SOLOMON_ENC8
 	select REED_SOLOMON_DEC8
+	default n
 
 config ANDROID_RAM_CONSOLE
 	bool "Android RAM buffer console"
