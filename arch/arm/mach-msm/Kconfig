@@ -1577,6 +1577,7 @@ config MSM_CPUFREQ_LIMITER
 
 config THUNDERPLUG_CONTROL
 	bool "Enable plugging down/up of cores based on load per core"
+	default n
 	help
 	  This driver hotplugs cpu cores based on per-core load
 
@@ -1603,7 +1604,7 @@ config ZEN_DECISION
 
 config MSM_SLEEPER
 	bool "Limit max frequency while screen is off"
-	default y
+	default n
 	help
 	  Limit max frequency while screen is off
 
@@ -1641,7 +1642,7 @@ config MSM_HOTPLUG
 
 config INTELLI_PLUG
 	bool "intelliplug hotplug"
-	default y
+	default n
 	help
 	  An improved hotplug by faux123.
 
@@ -1655,13 +1656,13 @@ config DYN_HOTPLUG
 
 config ALUCARD_HOTPLUG
 	bool "Enable alucard-hotplug cpu hotplug driver"
-	default y
+	default n
 	help
 	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
 
 config MAKO_HOTPLUG
 	bool "Mako Hotplug"
-	default y
+	default n
 	help
 	  Mako Hotplug: A custom hotplug by fransico franco
 

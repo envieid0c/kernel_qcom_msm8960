@@ -127,6 +127,10 @@
 #define PCIE_PWR_EN_PMIC_GPIO 13
 #define PCIE_RST_N_PMIC_MPP 1
 
+#ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
+int id_set_two_phase_freq(int cpufreq);
+#endif
+
 static bool mako_charger_mode;
 
 static int __init mako_androidboot_mode_arg(char *options)
@@ -1367,7 +1371,24 @@ static struct platform_device msm_tsens_device = {
 
 static struct msm_thermal_data msm_thermal_pdata = {
     .sensor_id = 7,
-    .poll_ms = 150,
+    .poll_ms = 250,
+#ifdef CONFIG_CPU_OVERCLOCK
+    .limit_temp_degC = 70,
+#else
+    .limit_temp_degC = 60,
+#endif
+    .temp_hysteresis_degC = 10,
+    .freq_step = 2,
+#ifdef CONFIG_INTELLI_THERMAL
+    .freq_control_mask = 0xf,
+#ifdef CONFIG_CPU_OVERCLOCK
+    .core_limit_temp_degC = 90,
+#else
+    .core_limit_temp_degC = 80,
+#endif
+    .core_temp_hysteresis_degC = 10,
+    .core_control_mask = 0xe,
+#endif
     .shutdown_temp = 88,
 
     .allowed_max_high = 84,
@@ -1381,6 +1402,7 @@ static struct msm_thermal_data msm_thermal_pdata = {
     .allowed_low_high = 79,
     .allowed_low_low = 73,
     .allowed_low_freq = 1350000,
+
 };
 
 #define MSM_SHARED_RAM_PHYS 0x80000000
@@ -1514,13 +1536,13 @@ static struct msm_rpmrs_platform_data msm_rpmrs_data __initdata = {
 	[MSM_RPMRS_VDD_MEM_RET_LOW]	= 750000,
 	[MSM_RPMRS_VDD_MEM_RET_HIGH]	= 750000,
 	[MSM_RPMRS_VDD_MEM_ACTIVE]	= 1050000,
-	[MSM_RPMRS_VDD_MEM_MAX]		= 1150000,
+	[MSM_RPMRS_VDD_MEM_MAX]		= 1250000,
     },
     .vdd_dig_levels = {
 	[MSM_RPMRS_VDD_DIG_RET_LOW]	= 500000,
 	[MSM_RPMRS_VDD_DIG_RET_HIGH]	= 750000,
 	[MSM_RPMRS_VDD_DIG_ACTIVE]	= 950000,
-	[MSM_RPMRS_VDD_DIG_MAX]		= 1150000,
+	[MSM_RPMRS_VDD_DIG_MAX]		= 1250000,
     },
     .vdd_mask = 0x7FFFFF,
     .rpmrs_target_id = {
@@ -1716,62 +1738,62 @@ static struct msm_spm_platform_data msm_spm_data[] __initdata = {
 
 static void __init apq8064_init_buses(void)
 {
-    msm_bus_rpm_set_mt_mask();
-    msm_bus_8064_apps_fabric_pdata.rpm_enabled = 1;
-    msm_bus_8064_sys_fabric_pdata.rpm_enabled = 1;
-    msm_bus_8064_mm_fabric_pdata.rpm_enabled = 1;
-    msm_bus_8064_apps_fabric.dev.platform_data =
+	msm_bus_rpm_set_mt_mask();
+	msm_bus_8064_apps_fabric_pdata.rpm_enabled = 1;
+	msm_bus_8064_sys_fabric_pdata.rpm_enabled = 1;
+	msm_bus_8064_mm_fabric_pdata.rpm_enabled = 1;
+	msm_bus_8064_apps_fabric.dev.platform_data =
 	&msm_bus_8064_apps_fabric_pdata;
-    msm_bus_8064_sys_fabric.dev.platform_data =
+	msm_bus_8064_sys_fabric.dev.platform_data =
 	&msm_bus_8064_sys_fabric_pdata;
-    msm_bus_8064_mm_fabric.dev.platform_data =
+	msm_bus_8064_mm_fabric.dev.platform_data =
 	&msm_bus_8064_mm_fabric_pdata;
-    msm_bus_8064_sys_fpb.dev.platform_data = &msm_bus_8064_sys_fpb_pdata;
-    msm_bus_8064_cpss_fpb.dev.platform_data = &msm_bus_8064_cpss_fpb_pdata;
-} 
+	msm_bus_8064_sys_fpb.dev.platform_data = &msm_bus_8064_sys_fpb_pdata;
+	msm_bus_8064_cpss_fpb.dev.platform_data = &msm_bus_8064_cpss_fpb_pdata;
+}
 
 static struct platform_device apq8064_device_ext_dsv_load_vreg __devinitdata = {
-    .name	= GPIO_REGULATOR_DEV_NAME,
-    .id	= APQ8064_EXT_DSV_LOAD_EN_GPIO,
-    .dev	= {
+	.name	= GPIO_REGULATOR_DEV_NAME,
+	.id	= APQ8064_EXT_DSV_LOAD_EN_GPIO,
+	.dev	= {
 	.platform_data =
-	    &apq8064_gpio_regulator_pdata[GPIO_VREG_ID_EXT_DSV_LOAD],
-    },
+	&apq8064_gpio_regulator_pdata[GPIO_VREG_ID_EXT_DSV_LOAD],
+	},
 };
 
 static struct platform_device apq8064_device_rpm_regulator __devinitdata = {
-    .name	= "rpm-regulator",
-    .id	= -1,
-    .dev	= {
+	.name	= "rpm-regulator",
+	.id	= -1,
+	.dev	= {
 	.platform_data = &apq8064_rpm_regulator_pdata,
-    },
+	},
 };
 
 #ifdef CONFIG_IR_GPIO_CIR
 static struct gpio_ir_recv_platform_data gpio_ir_recv_pdata = {
-    .gpio_nr = 88,
-    .active_low = 1,
+	.gpio_nr = 88,
+	.active_low = 1,
 };
 
 static struct platform_device gpio_ir_recv_pdev = {
-    .name = "gpio-rc-recv",
-    .dev = {
+	.name = "gpio-rc-recv",
+	.dev = {
 	.platform_data = &gpio_ir_recv_pdata,
-    },
+	},
 };
 #endif
 
 static struct platform_device *common_not_mpq_devices[] __initdata = {
-    &apq8064_device_qup_i2c_gsbi1,
-    &apq8064_device_qup_i2c_gsbi3,
-    &apq8064_device_qup_i2c_gsbi4,
+	&apq8064_device_qup_i2c_gsbi1,
+	&apq8064_device_qup_i2c_gsbi3,
+	&apq8064_device_qup_i2c_gsbi4,
 };
 
 static struct platform_device *common_devices[] __initdata = {
-    &apq8064_device_acpuclk,
-    &apq8064_device_dmov,
-    &apq8064_device_ssbi_pmic2,
-    &apq8064_device_ext_dsv_load_vreg,
+	&apq8064_device_acpuclk,
+	&apq8064_device_dmov,
+	&apq8064_device_ssbi_pmic2,
+	&apq8064_device_ext_dsv_load_vreg,
 #ifdef CONFIG_WIRELESS_CHARGER
     &wireless_charger,
 #endif
@@ -1816,7 +1838,7 @@ static struct platform_device *common_devices[] __initdata = {
 #endif
 
 #ifdef CONFIG_HW_RANDOM_MSM
-    &apq8064_device_rng,
+	&apq8064_device_rng,
 #endif
     &apq_pcm,
     &apq_pcm_routing,
@@ -1894,7 +1916,7 @@ static struct platform_device *common_devices[] __initdata = {
 static struct platform_device *cdp_devices[] __initdata = {
     &msm_device_sps_apq8064,
 #ifdef CONFIG_MSM_ROTATOR
-       &msm_rotator_device,
+    &msm_rotator_device,
 #endif
     &msm8960_cpu_slp_status,
 };
@@ -2117,6 +2139,10 @@ out:
 
 static void __init apq8064_mako_init(void)
 {
+#ifdef CONFIG_CPU_FREQ_GOV_INTELLIDEMAND
+	id_set_two_phase_freq(1134000);
+#endif
+
     if (meminfo_init(SYS_MEMORY, SZ_256M) < 0)
 	pr_err("meminfo_init() failed!\n");
     apq8064_common_init();
