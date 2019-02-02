@@ -142,7 +142,7 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
 # endif /* !NO_HZ */
 
 # ifdef CONFIG_CPU_IDLE_GOV_MENU
-+extern void menu_hrtimer_cancel(void);
+extern void menu_hrtimer_cancel(void);
 # else
 static inline void menu_hrtimer_cancel(void) {}
 # endif /* CONFIG_CPU_IDLE_GOV_MENU */
