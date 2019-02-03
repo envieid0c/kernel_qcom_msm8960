@@ -1,0 +1,1 @@
+../../arm-envieidoc_toolchain-linux-gnueabihf/sysroot/lib/libgomp.spec
