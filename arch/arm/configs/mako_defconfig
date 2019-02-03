@@ -658,3 +658,6 @@ CONFIG_KEXEC_HARDBOOT=y
 # The Ultra Kernel Samepage Merging feature
 CONFIG_KSM=y
 CONFIG_UKSM=y
+
+# Quickwakeup
+CONFIG_QUICK_WAKEUP=y

@@ -11,18 +11,12 @@ config SUSPEND_FREEZER
 	bool "Enable freezer for suspend to RAM/standby" \
 		if ARCH_WANTS_FREEZER_CONTROL || BROKEN
 	depends on SUSPEND
-	default y
+	default n
 	help
 	  This allows you to turn off the freezer for suspend. If this is
 	  done, no tasks are frozen for suspend to RAM/standby.
 
 	  Turning OFF this setting is NOT recommended! If in doubt, say Y.
-
-config HAS_EARLYSUSPEND2
-	bool "Deprecated early suspend functions"
-	default y
-	help
-	  This restores the deprecated early suspend functions.
 
 config HIBERNATE_CALLBACKS
 	bool
@@ -303,6 +297,14 @@ config SUSPEND_TIME
 	  Prints the time spent in suspend in the kernel log, and
 	  keeps statistics on the time spent in suspend in
 	  /sys/kernel/debug/suspend_time
+
+config QUICK_WAKEUP
+	bool "Quick wakeup"
+	depends on SUSPEND
+	default y
+	---help---
+	  Allow kernel driver to do periodic jobs without resuming the full system
+	  This option can increase battery life on android powered smartphone.
 
 config DEDUCE_WAKEUP_REASONS
 	bool
