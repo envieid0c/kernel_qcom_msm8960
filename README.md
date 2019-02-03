@@ -22,7 +22,7 @@ This kernel feature is :
 - CPU Voltage Table Control
 - Kernel Samepage Merging (KMS) + Ultra Kernel Samepage Mergin(UKMS)
 - CPU Hotplug
-: Zen Decision, MPDecision, IntelliPlug, MSM Hotplug, Mako Hotplug, Bricked Hotplug, Alucard Hotplug, Thunderplug, AutoSMP & MSM Sleeper
+: Zen Decision, MPDecision, IntelliPlug, MSM Hotplug, Mako Hotplug, Bricked Hotplug, Alucard Hotplug, Thunderplug, AutoSMP, Dyn_Plug & MSM Sleeper
 - GPU
 : Optomize Siple (128Mhz-487.5Mhz)
 : Control Screen & Gamma
