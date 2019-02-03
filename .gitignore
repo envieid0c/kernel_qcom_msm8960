@@ -33,6 +33,9 @@ modules.builtin
 *.patch
 *.gcno
 
+# Ignore Folder
+Release/
+
 #
 # Top-level generic files
 #
