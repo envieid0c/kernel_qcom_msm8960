@@ -28,6 +28,10 @@
 #include <linux/cpumask.h>
 #include <linux/hrtimer.h>
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+#include <linux/earlysuspend.h>
+#endif
+
 #define DEBUG 0
 
 #define ASMP_TAG "AutoSMP: "
@@ -304,9 +308,10 @@ static int __init asmp_init(void) {
 	mod_delayed_work(asmp_workq, &asmp_work,
 		   msecs_to_jiffies(ASMP_STARTDELAY));
 
-/* PLEASE FIX
-    register_power_suspend(&asmp_power_suspend_handler);
-*/
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    register_early_suspend(&asmp_power_suspend_handler);
+#endif
+
     asmp_kobject = kobject_create_and_add("autosmp", kernel_kobj);
     if (asmp_kobject) {
 	rc = sysfs_create_group(asmp_kobject, &asmp_attr_group);

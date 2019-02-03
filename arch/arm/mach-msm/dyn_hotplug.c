@@ -27,6 +27,10 @@
 #include <linux/cpumask.h>
 #include <linux/hrtimer.h>
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+#include <linux/earlysuspend.h>
+#endif
+
 #define DELAY		(HZ / 2)
 #define UP_THRESHOLD	(25)
 #define MIN_ONLINE	(2)
@@ -180,7 +184,9 @@ static void dyn_hp_enable(void)
     if (hp_data->enabled)
 	return;
     schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
-    register_power_suspend(&hp_data->suspend);
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    register_early_suspend(&hp_data->suspend);
+#endif
     hp_data->enabled = 1;
 }
 
@@ -190,7 +196,9 @@ static void dyn_hp_disable(void)
 	return;
     cancel_delayed_work(&hp_data->work);
     flush_scheduled_work();
-    unregister_power_suspend(&hp_data->suspend);
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    unregister_early_suspend(&hp_data->suspend);
+#endif
 
     /* Driver is disabled bring online all CPUs unconditionally */
     up_all(false);
@@ -325,8 +333,9 @@ static int __init dyn_hp_init(void)
     enabled = hp_data->enabled;
     min_online = hp_data->min_online;
     max_online = hp_data->max_online;
-    register_power_suspend(&hp_data->suspend);
-
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    register_early_suspend(&hp_data->suspend);
+#endif
     INIT_DELAYED_WORK(&hp_data->work, load_timer);
     schedule_delayed_work_on(0, &hp_data->work, hp_data->delay);
 
@@ -339,8 +348,9 @@ static void __exit dyn_hp_exit(void)
 {
     cancel_delayed_work(&hp_data->work);
     flush_scheduled_work();
-    unregister_power_suspend(&hp_data->suspend);
-
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    unregister_early_suspend(&hp_data->suspend);
+#endif
     kfree(hp_data);
     pr_info("%s: deactivated\n", __func__);
 }
