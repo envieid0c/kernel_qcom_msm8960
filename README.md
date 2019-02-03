@@ -5,7 +5,7 @@ envieiDoc Kernel is based on Lineage OS source, and included many improvement, f
 envieiDoc kernel EXPERIMENTAL! status, smoothness process on cpu and This kernel is include several feature to increase performance, This kernel need kernel configuration app to control this kernel, so try to find kernel configuration app after flash this kernel.
 
 Recommended Kernel Configuration App:
-- Kernel Adiutor 
+- Kernel Adiutor
 - Device Control
 
 This kernel feature is :
@@ -19,25 +19,27 @@ This kernel feature is :
 - CPU Frequency 94Mhz-1512Mhz
 - TCP Module's
 : Bic, Cubic, HighSpeed, HTCP, Hybla, Illinois, IP, Reno, Scalable, Vegas, Veno, Westwood & Yeah
-- Added CPU Voltage Table Control
+- CPU Voltage Table Control
+- Kernel Samepage Merging (KMS) + Ultra Kernel Samepage Mergin(UKMS)
 - CPU Hotplug
-: Zen Decision, MPDecision, IntelliPlug, MSM Hotplug, Mako Hotplug, Alucard Hotplug, Thunderplug & AutoSMP
+: Zen Decision, MPDecision, IntelliPlug, MSM Hotplug, Mako Hotplug, Bricked Hotplug, Alucard Hotplug, Thunderplug, AutoSMP & MSM Sleeper
 - GPU
 : Optomize Siple (128Mhz-487.5Mhz)
 : Control Screen & Gamma
 - Sound Control 3.0
 - Dynamic and Asynchronous fsync
+- Wake Locks
 - USB Fast Charge (in developing)
 - Implement Power Efficient Workqueues
 - Dynamic management of dirty page writebacks
-- Added Interface of Gentle Fair Sleepers and Arch Power (Option Disable by Default)
-- Added Frandom Support
-- Added Dynamic Fsync 2.0
+- Interface of Gentle Fair Sleepers and Arch Power (Option Disable by Default)
+- Frandom Support
 - Entropy Tweaks
+- Software CRT Control
+= Gentle Fair Sleepers & Arch Power
 - NEON VFP Optimized (softfp)
 - Combine MSM & Intelli Thermal (in developing)
-- Support F2FS File System Support 
+- Support F2FS File System Support
 - Optimized I/O Sched
-- Compiled using GCC 4.9.X 20150123
-
+- Compiled using GCC 5.5.0 - LTO
 #PRIVATE PROJECT
