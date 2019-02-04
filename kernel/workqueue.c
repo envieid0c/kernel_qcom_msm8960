@@ -1431,7 +1431,7 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
 }
 
 /**
- * mod_delayed_work_on - queue work on specific CPU after delay
+ * queue_delayed_work_on - queue work on specific CPU after delay
  * @cpu: CPU number to execute work on
  * @wq: workqueue to use
  * @dwork: work to queue
@@ -1462,7 +1462,7 @@ bool queue_delayed_work_on(int cpu, struct workqueue_struct *wq,
 EXPORT_SYMBOL_GPL(queue_delayed_work_on);
 
 /**
- * queue_delayed_work - queue work on a workqueue after delay
+ *queue_delayed_work- queue work on a workqueue after delay
  * @wq: workqueue to use
  * @dwork: delayable work to queue
  * @delay: number of jiffies to wait before queueing
@@ -1483,7 +1483,7 @@ EXPORT_SYMBOL_GPL(queue_delayed_work);
  * @dwork: work to queue
  * @delay: number of jiffies to wait before queueing
  *
- * If @dwork is idle, equivalent to mod_delayed_work_on(); otherwise,
+ * If @dwork is idle, equivalent to queue_delayed_work_on(); otherwise,
  * modify @dwork's timer so that it expires after @delay.  If @delay is
  * zero, @work is guaranteed to be scheduled immediately regardless of its
  * current state.
@@ -1491,11 +1491,11 @@ EXPORT_SYMBOL_GPL(queue_delayed_work);
  * Returns %false if @dwork was idle and queued, %true if @dwork was
  * pending and its timer was modified.
  *
- * This function is safe to call from any context other than IRQ handler.
+ * This function is safe to call from any context including IRQ handler.
  * See try_to_grab_pending() for details.
  */
 bool mod_delayed_work_on(int cpu, struct workqueue_struct *wq,
-			 struct delayed_work *dwork, unsigned long delay)
+	     struct delayed_work *dwork, unsigned long delay)
 {
 	unsigned long flags;
 	int ret;
@@ -1523,7 +1523,7 @@ EXPORT_SYMBOL_GPL(mod_delayed_work_on);
  * mod_delayed_work_on() on local CPU.
  */
 bool mod_delayed_work(struct workqueue_struct *wq, struct delayed_work *dwork,
-		      unsigned long delay)
+			unsigned long delay)
 {
 	return mod_delayed_work_on(WORK_CPU_UNBOUND, wq, dwork, delay);
 }
@@ -1623,6 +1623,7 @@ static bool worker_maybe_bind_and_lock(struct worker *worker)
 __acquires(&gcwq->lock)
 {
 	struct global_cwq *gcwq = worker->pool->gcwq;
+	struct worker_pool *pool = worker->pool;
 	struct task_struct *task = worker->task;
 
 	while (true) {
