@@ -3135,7 +3135,7 @@ void ieee80211_iterate_active_interfaces_atomic(struct ieee80211_hw *hw,
 void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
 
 /**
- * ieee80211_mod_delayed_work - add work onto the mac80211 workqueue
+ * ieee80211_queue_delayed_work - add work onto the mac80211 workqueue
  *
  * Drivers and mac80211 use this to queue delayed work onto the mac80211
  * workqueue.
@@ -3144,7 +3144,7 @@ void ieee80211_queue_work(struct ieee80211_hw *hw, struct work_struct *work);
  * @dwork: delayable work to queue onto the mac80211 workqueue
  * @delay: number of jiffies to wait before queueing
  */
-void ieee80211_mod_delayed_work(struct ieee80211_hw *hw,
+void ieee80211_queue_delayed_work(struct ieee80211_hw *hw,
 				  struct delayed_work *dwork,
 				  unsigned long delay);
 

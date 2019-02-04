@@ -328,7 +328,7 @@ static void __ref intelli_plug_work_fn(struct work_struct *work)
 	    pr_info("intelli_plug is suspened!\n");
 #endif
     }
-    mod_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+    queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 	msecs_to_jiffies(sampling_time));
 }
 
@@ -384,7 +384,7 @@ void __ref intelli_plug_perf_boost(bool on)
 		    cpu_up(cpu);
 	    }
 	} else {
-	    mod_delayed_work_on(0, intelliplug_wq,
+	    queue_delayed_work_on(0, intelliplug_wq,
 		&intelli_plug_work,
 		msecs_to_jiffies(sampling_time));
 	}
@@ -454,7 +454,7 @@ static void __ref intelli_plug_resume(struct early_suspend *handler)
 	wakeup_boost();
 	screen_off_limit(false);
     }
-    mod_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+    queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 	msecs_to_jiffies(10));
 }
 #endif
@@ -480,7 +480,7 @@ static void intelli_plug_input_event(struct input_handle *handle,
 #ifdef DEBUG_INTELLI_PLUG
     pr_info("intelli_plug touched!\n");
 #endif
-    mod_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
+    queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_boost,
 	msecs_to_jiffies(10));
 }
 
@@ -590,7 +590,7 @@ int __init intelli_plug_init(void)
 		WQ_HIGHPRI | WQ_UNBOUND, 1);
     INIT_DELAYED_WORK(&intelli_plug_work, intelli_plug_work_fn);
     INIT_DELAYED_WORK(&intelli_plug_boost, intelli_plug_boost_fn);
-    mod_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
+    queue_delayed_work_on(0, intelliplug_wq, &intelli_plug_work,
 	msecs_to_jiffies(10));
 
     return 0;

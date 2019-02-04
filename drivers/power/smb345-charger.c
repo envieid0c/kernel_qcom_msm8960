@@ -462,7 +462,7 @@ static irqreturn_t smb345_wireless_isr(int irq, void *dev_id)
 {
 	struct smb345_charger *smb = dev_id;
 
-	mod_delayed_work(smb345_wq, &smb->wireless_isr_work, WPC_DEBOUNCE_INTERVAL);
+	queue_delayed_work(smb345_wq, &smb->wireless_isr_work, WPC_DEBOUNCE_INTERVAL);
 
 	return IRQ_HANDLED;
 }
@@ -592,7 +592,7 @@ static void wireless_set(void)
 	smb345_set_WCInputCurrentlimit(charger->client, 300);
 	smb345_vflt_setting();
 	bq27541_wireless_callback(wireless_on);
-	mod_delayed_work(smb345_wq, &charger->wireless_set_current_work, WPC_SET_CURT_INTERVAL);
+	queue_delayed_work(smb345_wq, &charger->wireless_set_current_work, WPC_SET_CURT_INTERVAL);
 }
 
 static void wireless_reset(void)
@@ -650,7 +650,7 @@ static void wireless_set_current_function(struct work_struct *dat)
 	else if (charger->wpc_curr_limit == 500)
 		smb345_set_WCInputCurrentlimit(charger->client, 700);
 
-	mod_delayed_work(smb345_wq, &charger->wireless_set_current_work, WPC_SET_CURT_INTERVAL);
+	queue_delayed_work(smb345_wq, &charger->wireless_set_current_work, WPC_SET_CURT_INTERVAL);
 }
 
 void reconfig_AICL(void)
@@ -1288,7 +1288,7 @@ static int __devinit smb345_probe(struct i2c_client *client,
 				goto error;
 			}
 		}
-		mod_delayed_work(smb345_wq, &charger->wireless_det_work, WPC_INIT_DET_INTERVAL);
+		queue_delayed_work(smb345_wq, &charger->wireless_det_work, WPC_INIT_DET_INTERVAL);
 	}
 
 	printk("smb345_probe-\n");

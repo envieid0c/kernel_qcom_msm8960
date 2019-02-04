@@ -2190,7 +2190,7 @@ static void msm_chg_detect_work(struct work_struct *w)
 			msm_chg_block_off(motg);
 			motg->chg_state = USB_CHG_STATE_DETECTED;
 			motg->chg_type = USB_SDP_CHARGER;
-			mod_delayed_work(system_nrt_wq, &motg->chg_work, 0);
+			queue_delayed_work(system_nrt_wq, &motg->chg_work, 0);
 			return;
 		}
 		if (msm_chg_mhl_detect(motg)) {
@@ -2293,7 +2293,7 @@ static void msm_chg_detect_work(struct work_struct *w)
 		return;
 	}
 
-	mod_delayed_work(system_nrt_wq, &motg->chg_work, delay);
+	queue_delayed_work(system_nrt_wq, &motg->chg_work, delay);
 }
 
 /*
@@ -3214,7 +3214,7 @@ static irqreturn_t msm_otg_acok_irq(int irq, void *dev_id)
 {
 	struct msm_otg *motg = dev_id;
 
-	mod_delayed_work(msm_otg_acok_wq, &motg->acok_irq_work, 0.6*HZ);
+	queue_delayed_work(msm_otg_acok_wq, &motg->acok_irq_work, 0.6*HZ);
 	wake_lock_timeout(&motg->cable_lock, 1*HZ);
 
 	return IRQ_HANDLED;
@@ -3224,7 +3224,7 @@ static irqreturn_t msm_otg_id_pin_irq(int irq, void *dev_id)
 {
 	struct msm_otg *motg = dev_id;
 
-	mod_delayed_work(msm_otg_id_pin_wq, &motg->id_pin_irq_work, 0.6*HZ);
+	queue_delayed_work(msm_otg_id_pin_wq, &motg->id_pin_irq_work, 0.6*HZ);
 	wake_lock_timeout(&motg->cable_lock, 1*HZ);
 
 	return IRQ_HANDLED;
@@ -3366,7 +3366,7 @@ static irqreturn_t msm_pmic_id_irq(int irq, void *data)
 
 	if (!aca_id_turned_on)
 		/*schedule delayed work for 5msec for ID line state to settle*/
-		mod_delayed_work(system_nrt_wq, &motg->pmic_id_status_work,
+		queue_delayed_work(system_nrt_wq, &motg->pmic_id_status_work,
 				msecs_to_jiffies(MSM_PMIC_ID_STATUS_DELAY));
 
 	return IRQ_HANDLED;
@@ -4109,8 +4109,8 @@ static int __init msm_otg_probe(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_CHARGER_SMB345
-	mod_delayed_work(msm_otg_acok_wq, &motg->acok_irq_work, 0.5*HZ);
-	mod_delayed_work(msm_otg_id_pin_wq, &motg->id_pin_irq_work, 0.5*HZ);
+	queue_delayed_work(msm_otg_acok_wq, &motg->acok_irq_work, 0.5*HZ);
+	queue_delayed_work(msm_otg_id_pin_wq, &motg->id_pin_irq_work, 0.5*HZ);
 #endif
 
 	return 0;

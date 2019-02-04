@@ -28,8 +28,8 @@ struct rxrpc_crypt {
 } __attribute__((aligned(8)));
 
 #define rxrpc_queue_work(WS)	queue_work(rxrpc_workqueue, (WS))
-#define rxrpc_mod_delayed_work(WS,D)	\
-	mod_delayed_work(rxrpc_workqueue, (WS), (D))
+#define rxrpc_queue_delayed_work(WS,D)	\
+	queue_delayed_work(rxrpc_workqueue, (WS), (D))
 
 #define rxrpc_queue_call(CALL)	rxrpc_queue_work(&(CALL)->processor)
 #define rxrpc_queue_conn(CONN)	rxrpc_queue_work(&(CONN)->processor)

@@ -237,10 +237,10 @@ struct mmc_part {
  * @host_delay_ms:	The host controller time to start bkops
  * @delay_ms:	The time to start the BKOPS
  *        delayed work once MMC thread is idle
- * @min_sectors_to_mod_delayed_work: the changed
+ * @min_sectors_to_queue_delayed_work: the changed
  *        number of sectors that should issue check for BKOPS
  *        need
- * @size_percentage_to_mod_delayed_work: the changed
+ * @size_percentage_to_queue_delayed_work: the changed
  *        percentage of sectors that should issue check for
  *        BKOPS need
  * @poll_for_completion:	Poll on BKOPS completion
@@ -253,8 +253,8 @@ struct mmc_bkops_info {
 	struct delayed_work	dw;
 	unsigned int		host_delay_ms;
 	unsigned int		delay_ms;
-	unsigned int		min_sectors_to_mod_delayed_work;
-	unsigned int		size_percentage_to_mod_delayed_work;
+	unsigned int		min_sectors_to_queue_delayed_work;
+	unsigned int		size_percentage_to_queue_delayed_work;
 /*
  * A default time for checking the need for non urgent BKOPS once mmcqd
  * is idle.

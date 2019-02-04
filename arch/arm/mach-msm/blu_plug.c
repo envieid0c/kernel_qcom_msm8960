@@ -174,7 +174,7 @@ static __ref void load_timer(struct work_struct *work)
     else if (down_timer >= down_timer_cnt)
 	down_one();
 
-    mod_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(delay));
+    queue_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(delay));
 }
 
 
@@ -195,7 +195,7 @@ static __ref void dyn_lcd_resume(struct work_struct *work)
 {
     up_all();
 
-    mod_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(delay));
+    queue_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(delay));
 }
 
 static int fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
@@ -406,7 +406,7 @@ static int __init dyn_hp_init(void)
     INIT_WORK(&resume, dyn_lcd_resume);
     INIT_WORK(&suspend, dyn_lcd_suspend);
     INIT_DELAYED_WORK(&dyn_work, load_timer);
-    mod_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(INIT_DELAY));
+    queue_delayed_work_on(0, dyn_workq, &dyn_work, msecs_to_jiffies(INIT_DELAY));
 
     pr_info("%s: activated\n", __func__);
 

@@ -863,7 +863,7 @@ static void aio_queue_work(struct kioctx * ctx)
 		timeout = 1;
 	else
 		timeout = HZ/10;
-	mod_delayed_work(aio_wq, &ctx->wq, timeout);
+	queue_delayed_work(aio_wq, &ctx->wq, timeout);
 }
 
 /*
@@ -909,7 +909,7 @@ static void aio_kick_handler(struct work_struct *work)
 	 * we're in a worker thread already; no point using non-zero delay
 	 */
 	if (requeue)
-		mod_delayed_work(aio_wq, &ctx->wq, 0);
+		queue_delayed_work(aio_wq, &ctx->wq, 0);
 }
 
 

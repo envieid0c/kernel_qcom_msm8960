@@ -128,7 +128,7 @@ static void __cpuinit asmp_work_fn(struct work_struct *work) {
 	}
     } /* else do nothing */
 
-    mod_delayed_work(asmp_workq, &asmp_work, delay_jif);
+    queue_delayed_work(asmp_workq, &asmp_work, delay_jif);
 }
 
 static void asmp_power_suspend(struct power_suspend *h) {
@@ -160,7 +160,7 @@ static void __cpuinit asmp_late_resume(struct power_suspend *h) {
 	}
     /* resume main work thread */
     if (enabled)
-	mod_delayed_work(asmp_workq, &asmp_work,
+	queue_delayed_work(asmp_workq, &asmp_work,
 		msecs_to_jiffies(asmp_param.delay));
 
     pr_info(ASMP_TAG"resumed\n");
@@ -178,7 +178,7 @@ static int __cpuinit set_enabled(const char *val, const struct kernel_param *kp)
 
     ret = param_set_bool(val, kp);
     if (enabled) {
-	mod_delayed_work(asmp_workq, &asmp_work,
+	queue_delayed_work(asmp_workq, &asmp_work,
 		msecs_to_jiffies(asmp_param.delay));
 	pr_info(ASMP_TAG"enabled\n");
     } else {
@@ -305,7 +305,7 @@ static int __init asmp_init(void) {
 	return -ENOMEM;
     INIT_DELAYED_WORK(&asmp_work, asmp_work_fn);
     if (enabled)
-	mod_delayed_work(asmp_workq, &asmp_work,
+	queue_delayed_work(asmp_workq, &asmp_work,
 		   msecs_to_jiffies(ASMP_STARTDELAY));
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)

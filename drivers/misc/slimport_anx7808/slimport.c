@@ -465,7 +465,7 @@ static irqreturn_t anx7808_cbl_det_isr(int irq, void *data)
 	if (gpio_get_value(anx7808->pdata->gpio_cbl_det)) {
 		wake_lock(&anx7808->slimport_lock);
 		SP_DEV_DBG("%s : detect cable insertion\n", __func__);
-		mod_delayed_work(anx7808->workqueue, &anx7808->work, 0);
+		queue_delayed_work(anx7808->workqueue, &anx7808->work, 0);
 #ifdef CONFIG_CHARGER_SMB345
 		msm_otg_id_pin_irq_enabled(false);
 #endif
@@ -489,7 +489,7 @@ static void anx7808_work_func(struct work_struct *work)
 								work.work);
 
 	slimport_main_proc(td);
-	mod_delayed_work(td->workqueue, &td->work,
+	queue_delayed_work(td->workqueue, &td->work,
 			msecs_to_jiffies(300));
 #endif
 }
@@ -611,7 +611,7 @@ static int anx7808_i2c_probe(struct i2c_client *client,
 	if (gpio_get_value(anx7808->pdata->gpio_cbl_det)) {
 		wake_lock(&anx7808->slimport_lock);
 		SP_DEV_DBG("%s : detect cable insertion\n", __func__);
-		mod_delayed_work(anx7808->workqueue, &anx7808->work, 0);
+		queue_delayed_work(anx7808->workqueue, &anx7808->work, 0);
 #ifdef CONFIG_CHARGER_SMB345
 		msm_otg_id_pin_irq_enabled(false);
 #endif

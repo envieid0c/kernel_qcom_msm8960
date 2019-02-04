@@ -96,7 +96,7 @@ static void apply_down_lock(unsigned int cpu)
     struct down_lock *dl = &per_cpu(lock_info, cpu);
 
     dl->locked = 1;
-    mod_delayed_work_on(0, hotplug_wq, &dl->lock_rem,
+    queue_delayed_work_on(0, hotplug_wq, &dl->lock_rem,
 	          msecs_to_jiffies(hotplug.down_lock_dur));
 }
 
@@ -242,7 +242,7 @@ static void __ref bricked_hotplug_work(struct work_struct *work) {
 
 out:
     if (hotplug.bricked_enabled)
-	mod_delayed_work(hotplug_wq, &hotplug_work,
+	queue_delayed_work(hotplug_wq, &hotplug_work,
 		    msecs_to_jiffies(hotplug.delay));
     return;
 }
@@ -306,7 +306,7 @@ static void __ref bricked_hotplug_resume(void)
 
     /* Resume hotplug workqueue if required */
     if (required_reschedule) {
-	mod_delayed_work(hotplug_wq, &hotplug_work, 0);
+	queue_delayed_work(hotplug_wq, &hotplug_work, 0);
 	pr_info(MPDEC_TAG": Screen -> on. Activated bricked hotplug. | Mask=[%d%d%d%d]\n",
 		cpu_online(0), cpu_online(1), cpu_online(2), cpu_online(3));
     }
@@ -365,7 +365,7 @@ static int bricked_hotplug_start(void)
     }
 
     if (hotplug.bricked_enabled)
-	mod_delayed_work(hotplug_wq, &hotplug_work,
+	queue_delayed_work(hotplug_wq, &hotplug_work,
 		    msecs_to_jiffies(hotplug.startdelay));
 
     return ret;

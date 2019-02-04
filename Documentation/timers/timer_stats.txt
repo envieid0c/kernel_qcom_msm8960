@@ -53,8 +53,8 @@ Timerstats sample period: 3.888770 s
   28,     0 swapper          hrtimer_stop_sched_tick (hrtimer_sched_tick)
   22,  2948 IRQ 4            tty_flip_buffer_push (delayed_work_timer_fn)
    3,  3100 bash             schedule_timeout (process_timeout)
-   1,     1 swapper          mod_delayed_work_on (delayed_work_timer_fn)
-   1,     1 swapper          mod_delayed_work_on (delayed_work_timer_fn)
+   1,     1 swapper          queue_delayed_work_on (delayed_work_timer_fn)
+   1,     1 swapper          queue_delayed_work_on (delayed_work_timer_fn)
    1,     1 swapper          neigh_table_init_no_netlink (neigh_periodic_timer)
    1,  2292 ip               __netdev_watchdog_up (dev_watchdog)
    1,    23 events/1         do_cache_clean (delayed_work_timer_fn)
@@ -69,5 +69,5 @@ executed on expiry.
 
 Added flag to indicate 'deferrable timer' in /proc/timer_stats. A deferrable
 timer will appear as follows
-  10D,     1 swapper          mod_delayed_work_on (delayed_work_timer_fn)
+  10D,     1 swapper          queue_delayed_work_on (delayed_work_timer_fn)
 

@@ -598,7 +598,7 @@ static void do_dbs_timer(struct work_struct *work)
 	    queue_work_on(cpu, khotplug_wq,
 			&dbs_info->cpu_up_work);
     }
-    mod_delayed_work_on(cpu, khotplug_wq, &dbs_info->work, delay);
+    queue_delayed_work_on(cpu, khotplug_wq, &dbs_info->work, delay);
     mutex_unlock(&dbs_info->timer_mutex);
 }
 
@@ -613,7 +613,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
     INIT_WORK(&dbs_info->cpu_down_work, do_cpu_down);
     if (!dbs_info->boost_applied)
 	delay = usecs_to_jiffies(dbs_tuners_ins.boost_timeout);
-    mod_delayed_work_on(dbs_info->cpu, khotplug_wq, &dbs_info->work,
+    queue_delayed_work_on(dbs_info->cpu, khotplug_wq, &dbs_info->work,
 	delay);
 }
 
