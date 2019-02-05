@@ -662,3 +662,7 @@ CONFIG_UKSM=y
 
 # Quickwakeup
 CONFIG_QUICK_WAKEUP=y
+
+#  add support for kernel mode NEON
+CONFIG_KERNEL_MODE_NEON=y
+CONFIG_AIO_OPTIMIZATION=y
