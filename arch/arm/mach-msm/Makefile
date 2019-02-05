@@ -396,5 +396,7 @@ obj-$(CONFIG_MAKO_HOTPLUG)		+= mako_hotplug.o
 obj-$(CONFIG_ASMP)			+= autosmp.o
 obj-$(CONFIG_BRICKED_HOTPLUG)		+= bricked_hotplug.o
 
+obj-$(CONFIG_HAS_MACH_MEMUTILS) += memutils/
+
 # Fast charge
 obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
