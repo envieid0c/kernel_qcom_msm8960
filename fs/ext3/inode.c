@@ -1858,6 +1858,7 @@ static int ext3_releasepage(struct page *page, gfp_t wait)
  */
 static ssize_t ext3_direct_IO(int rw, struct kiocb *iocb,
 			struct iov_iter *iter, loff_t offset)
+{
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file->f_mapping->host;
 	struct ext3_inode_info *ei = EXT3_I(inode);

@@ -428,7 +428,6 @@ void exit_aio(struct mm_struct *mm)
 		for (i = 0; i < count; i++)
 			exit_aio_ctx(mm, ctx[i]);
 		} while (count);
-	}
 }
 
 /* aio_get_req

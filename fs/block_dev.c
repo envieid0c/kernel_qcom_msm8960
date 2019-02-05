@@ -215,6 +215,7 @@ blkdev_get_blocks(struct inode *inode, sector_t iblock,
 		set_buffer_mapped(bh);
 	return 0;
 }
+#endif
 
 static ssize_t
 blkdev_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,

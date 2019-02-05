@@ -39,7 +39,7 @@ const struct address_space_operations ramfs_aops = {
 
 const struct file_operations ramfs_file_operations = {
 	.read		= do_sync_read,
-	.read_iter	= generic_file_read_iter,,
+	.read_iter	= generic_file_read_iter,
 	.write		= do_sync_write,
 	.write_iter	= generic_file_write_iter,
 	.mmap		= generic_file_mmap,
