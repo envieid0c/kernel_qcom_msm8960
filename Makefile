@@ -10,6 +10,9 @@ NAME = Saber-toothed Squirrel
 # Comments in this file are targeted only to the developer, do not
 # expect to learn how to build the kernel reading this file.
 
+CLANG_TRIPLE    ?= $(CROSS_COMPILE)
+CLANG_TARGET	:= -target $(notdir $(CLANG_TRIPLE:%-=%))
+
 # Do not:
 # o  use make's built-in rules and variables
 #    (this increases performance and avoids hard-to-debug behaviour);
@@ -243,12 +246,17 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
-HOSTCC       = ccache gcc
+#HOSTCC       = ccache gcc
+HOSTCC       = clang
 HOSTCXX      = g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer \
-		-ftree-coalesce-vars -ftree-loop-if-convert -ftree-loop-distribution \
-		-fgraphite-identity -floop-nest-optimize -floop-parallelize-all -flto
+		-flto
 HOSTCXXFLAGS = -Ofast
+
+ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
+		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -320,6 +328,14 @@ endif
 
 export quiet Q KBUILD_VERBOSE
 
+ifneq ($(CC),)
+ifeq ($(shell $(CC) -v 2>&1 | grep -c "clang version"), 1)
+COMPILER := clang
+else
+COMPILER := gcc
+endif
+export COMPILER
+endif
 
 # Look for make include files relative to root of kernel src
 MAKEFLAGS += --include-dir=$(srctree)
@@ -332,7 +348,16 @@ include $(srctree)/scripts/Kbuild.include
 
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
+ifeq ($(COMPILER),clang)
+ifneq ($(CROSS_COMPILE),)
+REAL_CC		:= $(CC) -target $(CROSS_COMPILE:%-=%)
+endif
+ifneq ($(GCC_TOOLCHAIN),)
+REAL_CC		+= -gcc-toolchain $(GCC_TOOLCHAIN)
+endif
+else
 CC		= $(CROSS_COMPILE)gcc
+endif
 CPP		= $(CC) -E
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
@@ -349,15 +374,15 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-MODFLAGS	= -DMODULE -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 \
+MODFLAGS	= -DMODULE -ffast-math -mtune=cortex-a15 \
 		  -marm -march=armv7-a -mfpu=neon -ftree-vectorize -mvectorize-with-neon-quad -mfpu=neon-vfpv4 \
-		  -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange \
-		  -floop-strip-mine -floop-block -floop-nest-optimize -floop-parallelize-all -flto
+		  -fgraphite -floop-flatten -ftree-loop-linear -floop-interchange \
+		  -floop-strip-mine -floop-block -flto
 
 CFLAGS_MODULE   = $(MODFLAGS)
 AFLAGS_MODULE   = $(MODFLAGS)
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL	= -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15
+CFLAGS_KERNEL	= -ffast-math -mtune=cortex-a15
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -375,10 +400,9 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 #
 #CFLAGS_A15 = -march=armv7-a -mtune=cortex-a15 -mfpu=neon-vfpv4 -funsafe-math-optimizations
 CFLAGS_A15 = -mtune=cortex-a15 -mfpu=neon-vfpv4 -funsafe-math-optimizations
-GRAPHITE_FLAGS := -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all \
+GRAPHITE_FLAGS := -fgraphite -floop-flatten \
 		    -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block \
-		    -ftree-coalesce-vars -ftree-loop-if-convert -ftree-loop-distribution \
-		    -floop-nest-optimize -floop-parallelize-all -flto -mthumb
+		    -flto -mthumb
 CFLAGS_MODULO = -fmodulo-sched -fmodulo-sched-allow-regmoves
 KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO) $(GRAPHITE_FLAGS)
 
@@ -387,10 +411,10 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
 		   -funsafe-math-optimizations \
-		    $(KERNEK_MODS) $(GCC5)
+		    $(KERNEK_MODS) $(GCC5) \
+		    $(call cc-option,-fno-delete-null-pointer-checks,)
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -605,7 +629,21 @@ endif
 
 # This warning generated too much noise in a regular build.
 # Use make W=1 to enable this warning (see scripts/Makefile.build)
+ifeq ($(COMPILER),clang)
+KBUILD_CPPFLAGS += $(call cc-option,-Qunused-arguments,)
+KBUILD_CPPFLAGS += $(call cc-option,-Wno-unknown-warning-option,)
+KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
+KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
+KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
+# Quiet clang warning: comparison of unsigned expression < 0 is always false
+KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
+# CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
+# source of a reference will be _MergedGlobals and not on of the whitelisted names.
+# See modpost pattern 2
+KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
+else
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
+endif
 
 #ifdef CONFIG_FRAME_POINTER
 #KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls

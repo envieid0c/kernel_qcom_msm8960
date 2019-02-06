@@ -29,6 +29,7 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
 	unsigned long ret;
 #ifdef swp_is_buggy
 	unsigned long flags;
+	uninitialized_var(prev);
 #endif
 #if __LINUX_ARM_ARCH__ >= 6
 	unsigned int tmp;
