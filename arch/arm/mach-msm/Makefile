@@ -400,3 +400,6 @@ obj-$(CONFIG_HAS_MACH_MEMUTILS) += memutils/
 
 # Fast charge
 obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
+
+obj-$(CONFIG_WALL_CLK) += wallclk.o
+obj-$(CONFIG_WALL_CLK_SYSFS) += wallclk_sysfs.o

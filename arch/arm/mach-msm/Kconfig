@@ -2684,4 +2684,22 @@ config FORCE_FAST_CHARGE
 	  A simple sysfs interface to force adapters that
 	  are detected as USB to charge as AC.
 
+config WALL_CLK
+	tristate "Wall Clock hardware block simulation"
+	depends on ARCH_APQ8064
+	default n
+	help
+	 This driver simulates the wall-clock hardware block on fsm8064_ep
+	 femto emulation platform. This block will be used to provide
+	 clock information to the LTE Layer 2 module running on the hexagon
+	 processor.
+
+config WALL_CLK_SYSFS
+	tristate "Wall Clock SysFS Support"
+	depends on SYSFS && WALL_CLK
+	default n
+	help
+	 Support the wallclk directory in sysfs filesystem to enable the
+	 wall clock simulation and read the current SFN.
+
 endif
