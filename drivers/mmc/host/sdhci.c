@@ -69,6 +69,7 @@ static inline int sdhci_runtime_pm_put(struct sdhci_host *host)
 
 static void sdhci_dumpregs(struct sdhci_host *host)
 {
+#ifdef CONFIG_MMC_DEBUG
 	pr_debug(DRIVER_NAME ": =========== REGISTER DUMP (%s)===========\n",
 		mmc_hostname(host->mmc));
 
@@ -114,6 +115,7 @@ static void sdhci_dumpregs(struct sdhci_host *host)
 		       readl(host->ioaddr + SDHCI_ADMA_ADDRESS));
 
 	pr_debug(DRIVER_NAME ": ===========================================\n");
+#endif
 }
 
 /*****************************************************************************\
