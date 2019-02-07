@@ -1168,6 +1168,14 @@ config PCI_QUIRKS
 	  bugs/quirks. Disable this only if your target machine is
 	  unaffected by PCI quirks.
 
+config VMALLOC_INFO
+	default n
+	bool "Enable calculate vmalloc info"
+	help
+	  This enables how amount of memory the machine has.
+	  Calculate virtually contiguous memory.
+	  4% of the CPU usage of "make test".
+
 config EMBEDDED
 	bool "Embedded system"
 	select EXPERT
