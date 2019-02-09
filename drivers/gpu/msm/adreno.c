@@ -2493,6 +2493,12 @@ bool adreno_isidle(struct kgsl_device *device)
 
 	rptr = adreno_get_rptr(&adreno_dev->ringbuffer);
 
+	/*
+	 * wptr is updated when we add commands to ringbuffer, add a barrier
+	 * to make sure updated wptr is compared to rptr
+	 */
+	smp_mb();
+
 	if (rptr == adreno_dev->ringbuffer.wptr)
 		return adreno_hw_isidle(device);
 
