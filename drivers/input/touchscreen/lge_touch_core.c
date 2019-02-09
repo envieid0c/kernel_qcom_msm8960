@@ -23,7 +23,10 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include <linux/earlysuspend.h>
+#ifdef CONFIG_FB
+#include <linux/notifier.h>
+#include <linux/fb.h>
+#endif
 #include <linux/jiffies.h>
 #include <linux/sysdev.h>
 #include <linux/types.h>
@@ -33,15 +36,6 @@
 #include <linux/gpio.h>
 
 #include <linux/input/lge_touch_core.h>
-
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
-#include <linux/input/sweep2wake.h>
-#endif
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-#include <linux/input/doubletap2wake.h>
-#endif
-#endif
 
 struct touch_device_driver*     touch_device_func;
 struct workqueue_struct*        touch_wq;
@@ -92,11 +86,6 @@ static struct pointer_trace tr_data[MAX_TRACE];
 static int tr_last_index;
 #endif
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-static void touch_early_suspend(struct early_suspend *h);
-static void touch_late_resume(struct early_suspend *h);
-#endif
-
 /* set_touch_handle / get_touch_handle
  *
  * Developer can save their object using 'set_touch_handle'.
@@ -114,14 +103,19 @@ void* get_touch_handle(struct i2c_client *client)
     return ts->h_touch;
 }
 
+#ifdef CONFIG_FB
+static void touch_fb_suspend(struct lge_touch_data *ts);
+static void touch_fb_resume(struct lge_touch_data *ts);
+static int fb_notifier_callback(struct notifier_block *self,
+                                unsigned long event, void *data);
+#endif
+
 /* touch_i2c_read / touch_i2c_write
  *
  * Developer can use these fuctions to communicate with touch_device through I2C.
  */
 int touch_i2c_read(struct i2c_client *client, u8 reg, int len, u8 *buf)
 {
-#define LGETOUCH_I2C_RETRY 10
-    int retry = 0;
     struct i2c_msg msgs[] = {
 	{
 	    .addr = client->addr,
@@ -137,18 +131,13 @@ int touch_i2c_read(struct i2c_client *client, u8 reg, int len, u8 *buf)
 	},
     };
 
-    for (retry = 0; retry <= LGETOUCH_I2C_RETRY; retry++) {
-	if (i2c_transfer(client->adapter, msgs, 2) == 2)
-	    break;
-	if (retry == LGETOUCH_I2C_RETRY) {
-	    if (printk_ratelimit())
-		TOUCH_ERR_MSG("transfer error\n");
-	    return -EIO;
-	} else
-	    msleep(10);
+    if (i2c_transfer(client->adapter, msgs, 2) < 0) {
+	if (printk_ratelimit())
+	    TOUCH_ERR_MSG("transfer error\n");
+	return -EIO;
+    } else {
+	return 0;
     }
-
-    return 0;
 }
 
 int touch_i2c_write(struct i2c_client *client, u8 reg, int len, u8 * buf)
@@ -416,7 +405,7 @@ static int touch_ic_init(struct lge_touch_data *ts)
 	next_work = atomic_read(&ts->next_work);
 
 	if (unlikely(int_pin != 1 && next_work <= 0)) {
-	    TOUCH_INFO_MSG("WARN: (init)Interrupt pin is low"
+	    TOUCH_INFO_MSG("WARN: Interrupt pin is low"
 		    " - next_work: %d, try_count: %d]\n",
 		    next_work, ts->ic_init_err_cnt);
 	    goto err_out_retry;
@@ -863,7 +852,7 @@ out:
 	next_work = atomic_read(&ts->next_work);
 
 	if (unlikely(int_pin != 1 && next_work <= 0)) {
-	    TOUCH_INFO_MSG("WARN: (work)Interrupt pin is low - "
+	    TOUCH_INFO_MSG("WARN: Interrupt pin is low - "
 		    "next_work: %d, try_count: %d]\n",
 		    next_work, ts->work_sync_err_cnt);
 	    goto err_out_retry;
@@ -1876,11 +1865,7 @@ static int touch_probe(struct i2c_client *client,
 
 	ret = request_threaded_irq(client->irq, touch_irq_handler,
 		NULL,
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-		ts->pdata->role->irqflags | IRQF_ONESHOT | IRQF_TRIGGER_LOW | IRQF_NO_SUSPEND,
-#else
 		ts->pdata->role->irqflags | IRQF_ONESHOT,
-#endif
 		client->name, ts);
 
 	if (ret < 0) {
@@ -1919,11 +1904,10 @@ static int touch_probe(struct i2c_client *client,
 	ts->accuracy_filter.touch_max_count = one_sec / 2;
     }
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-    ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-    ts->early_suspend.suspend = touch_early_suspend;
-    ts->early_suspend.resume = touch_late_resume;
-    register_early_suspend(&ts->early_suspend);
+#ifdef CONFIG_FB
+    ts->fb_suspended = false;
+    ts->fb_notif.notifier_call = fb_notifier_callback;
+    fb_register_client(&ts->fb_notif);
 #endif
 
     /* Register sysfs for making fixed communication path to framework layer */
@@ -1961,7 +1945,7 @@ err_lge_touch_sysfs_init_and_add:
 err_lge_touch_sys_dev_register:
     sysdev_class_unregister(&lge_touch_sys_class);
 err_lge_touch_sys_class_register:
-    unregister_early_suspend(&ts->early_suspend);
+    fb_unregister_client(&ts->fb_notif);
     if (ts->pdata->role->operation_mode == INTERRUPT_MODE) {
 	gpio_free(ts->pdata->int_pin);
 	free_irq(ts->client->irq, ts);
@@ -1998,7 +1982,7 @@ static int touch_remove(struct i2c_client *client)
     sysdev_unregister(&lge_touch_sys_device);
     sysdev_class_unregister(&lge_touch_sys_class);
 
-    unregister_early_suspend(&ts->early_suspend);
+    fb_unregister_client(&ts->fb_notif);
 
     if (ts->pdata->role->operation_mode == INTERRUPT_MODE) {
 	gpio_free(ts->pdata->int_pin);
@@ -2015,114 +1999,107 @@ static int touch_remove(struct i2c_client *client)
     return 0;
 }
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-static void touch_early_suspend(struct early_suspend *h)
+static int touch_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-    struct lge_touch_data *ts =
-	    container_of(h, struct lge_touch_data, early_suspend);
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-    bool prevent_sleep = false;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
-    prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
-#endif
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-    prevent_sleep = prevent_sleep || (dt2w_switch > 0);
-#endif
-#endif
-
-    if (unlikely(touch_debug_mask & DEBUG_TRACE))
-	TOUCH_DEBUG_MSG("\n");
+    struct lge_touch_data *ts = i2c_get_clientdata(client);
 
     ts->curr_resume_state = 0;
 
     if (ts->fw_upgrade.is_downloading == UNDER_DOWNLOADING) {
-	TOUCH_INFO_MSG("early_suspend is not executed\n");
-	return;
+	TOUCH_INFO_MSG("suspend not executed due to a firmware downloading process\n");
+	return 0;
     }
 
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-    if (prevent_sleep) {
-	enable_irq_wake(ts->client->irq);
-	release_all_ts_event(ts);
-    } else
-#endif
-    {
-	if (ts->pdata->role->operation_mode == INTERRUPT_MODE)
-	    disable_irq(ts->client->irq);
-	else
-	    hrtimer_cancel(&ts->timer);
+    if (ts->pdata->role->operation_mode == INTERRUPT_MODE)
+	disable_irq(ts->client->irq);
+    else
+	hrtimer_cancel(&ts->timer);
 
-	cancel_work_sync(&ts->work);
-	cancel_delayed_work_sync(&ts->work_init);
-	if (ts->pdata->role->key_type == TOUCH_HARD_KEY)
-	    cancel_delayed_work_sync(&ts->work_touch_lock);
+    cancel_work_sync(&ts->work);
+    cancel_delayed_work_sync(&ts->work_init);
+    if (ts->pdata->role->key_type == TOUCH_HARD_KEY)
+	cancel_delayed_work_sync(&ts->work_touch_lock);
 
-	release_all_ts_event(ts);
+    release_all_ts_event(ts);
 
-	touch_power_cntl(ts, ts->pdata->role->suspend_pwr);
-    }
+    touch_power_cntl(ts, ts->pdata->role->suspend_pwr);
+
+    return 0;
 }
 
-static void touch_late_resume(struct early_suspend *h)
+static int touch_resume(struct i2c_client *client)
 {
-    struct lge_touch_data *ts =
-	    container_of(h, struct lge_touch_data, early_suspend);
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-    bool prevent_sleep = false;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
-    prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
-#endif
-#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
-    prevent_sleep = prevent_sleep || (dt2w_switch > 0);
-#endif
-#endif
-
-    if (unlikely(touch_debug_mask & DEBUG_TRACE))
-	TOUCH_DEBUG_MSG("\n");
+    struct lge_touch_data *ts = i2c_get_clientdata(client);
 
     ts->curr_resume_state = 1;
 
     if (ts->fw_upgrade.is_downloading == UNDER_DOWNLOADING) {
-	TOUCH_INFO_MSG("late_resume is not executed\n");
-	return;
+	TOUCH_INFO_MSG("resume not executed due to a firmware downloading process\n");
+	return 0;
     }
 
-#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
-    if (prevent_sleep)
-	disable_irq_wake(ts->client->irq);
+    touch_power_cntl(ts, ts->pdata->role->resume_pwr);
+
+    if (ts->pdata->role->operation_mode == INTERRUPT_MODE)
+	enable_irq(ts->client->irq);
     else
-#endif
-    {
-	touch_power_cntl(ts, ts->pdata->role->resume_pwr);
+	hrtimer_start(&ts->timer,
+	    ktime_set(0, ts->pdata->role->report_period),
+		    HRTIMER_MODE_REL);
 
-	if (ts->pdata->role->operation_mode == INTERRUPT_MODE)
-	    enable_irq(ts->client->irq);
-	else
-	    hrtimer_start(&ts->timer,
-		ktime_set(0, ts->pdata->role->report_period),
-			HRTIMER_MODE_REL);
+    if (ts->pdata->role->resume_pwr == POWER_ON)
+	queue_delayed_work(touch_wq, &ts->work_init,
+	    msecs_to_jiffies(ts->pdata->role->booting_delay));
+    else
+	queue_delayed_work(touch_wq, &ts->work_init, 0);
 
-	if (ts->pdata->role->resume_pwr == POWER_ON)
-	    queue_delayed_work(touch_wq, &ts->work_init,
-		msecs_to_jiffies(ts->pdata->role->booting_delay));
-	else
-	    queue_delayed_work(touch_wq, &ts->work_init, 0);
-    }
-}
-#endif	/* early suspend */
-
-#if defined(CONFIG_PM)
-static int touch_suspend(struct device *device)
-{
     return 0;
 }
 
-static int touch_resume(struct device *device)
+#ifdef CONFIG_FB
+static void touch_fb_suspend(struct lge_touch_data *ts)
 {
+    if (ts->fb_suspended)
+	return;
+
+    touch_suspend(ts->client, PMSG_SUSPEND);
+    ts->fb_suspended = true;
+}
+
+static void touch_fb_resume(struct lge_touch_data *ts)
+{
+        if (!ts->fb_suspended)
+                return;
+
+    touch_resume(ts->client);
+        ts->fb_suspended = false;
+}
+
+static int fb_notifier_callback(struct notifier_block *self,
+		unsigned long event, void *data)
+{
+    struct fb_event *evdata = data;
+    int *blank;
+    struct lge_touch_data *ts = container_of(self, struct lge_touch_data, fb_notif);
+
+    if (evdata && evdata->data && ts) {
+	if (event == FB_EVENT_BLANK) {
+	    blank = evdata->data;
+	    switch (*blank) {
+		case FB_BLANK_UNBLANK:
+		case FB_BLANK_NORMAL:
+		case FB_BLANK_VSYNC_SUSPEND:
+		case FB_BLANK_HSYNC_SUSPEND:
+		    touch_fb_resume(ts);
+		    break;
+		default:
+		case FB_BLANK_POWERDOWN:
+		    touch_fb_suspend(ts);
+		    break;
+	    }
+	}
+    }
+
     return 0;
 }
 #endif
@@ -2131,23 +2108,17 @@ static struct i2c_device_id lge_ts_id[] = {
     {LGE_TOUCH_NAME, 0 },
 };
 
-#if defined(CONFIG_PM)
-static struct dev_pm_ops touch_pm_ops = {
-    .suspend = touch_suspend,
-    .resume = touch_resume,
-};
-#endif
-
 static struct i2c_driver lge_touch_driver = {
     .probe = touch_probe,
     .remove = touch_remove,
+#ifndef CONFIG_FB
+    .suspend = touch_suspend,
+    .resume = touch_resume,
+#endif
     .id_table = lge_ts_id,
     .driver = {
 	.name = LGE_TOUCH_NAME,
 	.owner = THIS_MODULE,
-#if defined(CONFIG_PM)
-	.pm = &touch_pm_ops,
-#endif
     },
 };
 
