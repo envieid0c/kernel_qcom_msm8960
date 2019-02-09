@@ -358,9 +358,9 @@ static void msm_dmov_enqueue_cmd_ext_work(struct work_struct *work)
 		dmov_conf[adm].clk_ctl = CLK_TO_BE_DIS;
 		schedule_delayed_work(&dmov_conf[adm].work, (HZ/10));
 	}
-	spin_unlock_irqrestore(&dmov_conf[adm].list_lock, flags);
 error:
 	mutex_unlock(&dmov_conf[adm].lock);
+	spin_unlock_irqrestore(&dmov_conf[adm].list_lock, flags);
 }
 
 static void __msm_dmov_enqueue_cmd_ext(unsigned id, struct msm_dmov_cmd *cmd)
