@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -143,15 +143,10 @@ struct slim_framer {
  * struct slim_addrt: slimbus address used internally by the slimbus framework.
  * @valid: If the device is still there or if the address can be reused.
  * @eaddr: 6-bytes-long elemental address
- * @laddr: It is possible that controller will set a predefined logical address
- *	rather than the one assigned by framework. (i.e. logical address may
- *	not be same as index into this table). This entry will store the
- *	logical address value for this enumeration address.
  */
 struct slim_addrt {
     bool	valid;
     u8	eaddr[6];
-    u8	laddr;
 };
 
 /*
@@ -300,17 +295,15 @@ enum slim_ch_proto {
 /*
  * enum slim_ch_rate: Most commonly used frequency rate families.
  * Use 1HZ for push-pull transport.
- * 4KHz and 11.025KHz are most commonly used in audio applications.
- * Typically, slimbus runs at frequencies to support channels running at 4KHz
- * and/or 11.025KHz isochronously.
+ * 44.1KHz and 48KHz are most commonly used in audio applications.
+ * Typically, slimbus runs at frequencies to support channels running at 44.1KHz
+ * and/or 48KHz isochronously.
+ * We want to force these values to match the majority of audio played by users. 
  */
 enum slim_ch_rate {
     SLIM_RATE_1HZ,
-    SLIM_RATE_4000HZ,
-    SLIM_RATE_11025HZ,
     SLIM_RATE_44100HZ,
-    SLIM_RATE_48000HZ,
-};
+    SLIM_RATE_48000HZ
 
 /*
  * enum slim_ch_coeff: Coefficient of a channel used internally by framework.
@@ -486,8 +479,6 @@ enum slim_clk_state {
  * @m_ctrl: Mutex protecting controller data structures (ports, channels etc)
  * @addrt: Logical address table
  * @num_dev: Number of active slimbus slaves on this bus
- * @devs: List of devices on this controller
- * @wq: Workqueue per controller used to notify devices when they report present
  * @txnt: Table of transactions having transaction ID
  * @last_tid: size of the table txnt (can't grow beyond 256 since TID is 8-bits)
  * @ports: Ports associated with this controller
@@ -505,11 +496,6 @@ enum slim_clk_state {
  * @set_laddr: Setup logical address at laddr for the slave with elemental
  *	address e_addr. Drivers implementing controller will be expected to
  *	send unicast message to this device with its logical address.
- * @allocbw: Controller can override default reconfiguration and channel
- *	scheduling algorithm.
- * @get_laddr: It is possible that controller needs to set fixed logical
- *	address table and get_laddr can be used in that case so that controller
- *	can do this assignment.
  * @wakeup: This function pointer implements controller-specific procedure
  *	to wake it up from clock-pause. Framework will call this to bring
  *	the controller out of clock pause.
@@ -524,8 +510,6 @@ enum slim_clk_state {
  * @port_xfer_status: Called by framework when client calls get_xfer_status
  *	API. Returns how much buffer is actually processed and the port
  *	errors (e.g. overflow/underflow) if any.
- * @xfer_user_msg: Send user message to specified logical address. Underlying
- *	controller has to support sending user messages. Returns error if any.
  */
 struct slim_controller {
     struct device		dev;
@@ -541,8 +525,6 @@ struct slim_controller {
     struct mutex		m_ctrl;
     struct slim_addrt	*addrt;
     u8			num_dev;
-    struct list_head	devs;
-    struct workqueue_struct *wq;
     struct slim_msg_txn	**txnt;
     u8			last_tid;
     struct slim_port	*ports;
@@ -556,23 +538,16 @@ struct slim_controller {
 		struct slim_msg_txn *txn);
     int			(*set_laddr)(struct slim_controller *ctrl,
 		const u8 *ea, u8 elen, u8 laddr);
-    int			(*allocbw)(struct slim_device *sb,
-		int *subfrmc, int *clkgear);
-    int			(*get_laddr)(struct slim_controller *ctrl,
-		const u8 *ea, u8 elen, u8 *laddr);
     int			(*wakeup)(struct slim_controller *ctrl);
     int			(*config_port)(struct slim_controller *ctrl,
 		u8 port);
     int			(*framer_handover)(struct slim_controller *ctrl,
 		struct slim_framer *new_framer);
     int			(*port_xfer)(struct slim_controller *ctrl,
-		u8 pn, phys_addr_t iobuf, u32 len,
+		u8 pn, u8 *iobuf, u32 len,
 		struct completion *comp);
     enum slim_port_err	(*port_xfer_status)(struct slim_controller *ctr,
-		u8 pn, phys_addr_t *done_buf, u32 *done_len);
-    int			(*xfer_user_msg)(struct slim_controller *ctrl,
-		u8 la, u8 mt, u8 mc,
-		struct slim_ele_access *msg, u8 *buf, u8 len);
+		u8 pn, u8 **done_buf, u32 *done_len);
 };
 #define to_slim_controller(d) container_of(d, struct slim_controller, dev)
 
@@ -594,7 +569,6 @@ struct slim_driver {
     int				(*suspend)(struct slim_device *sldev,
 		    pm_message_t pmesg);
     int				(*resume)(struct slim_device *sldev);
-    int				(*device_up)(struct slim_device *sldev);
 
     struct device_driver		driver;
     const struct slim_device_id	*id_table;
@@ -627,11 +601,6 @@ struct slim_pending_ch {
  *  @mark_define: List of channels pending definition/activation.
  *  @mark_suspend: List of channels pending suspend.
  *  @mark_removal: List of channels pending removal.
- *  @notified: Flag to indicate whether this device has been notified. The
- *	device may report present multiple times, but should be notified only
- *	first time it has reported present.
- *  @dev_list: List of devices on a controller
- *  @wd: Work structure associated with workqueue for presence notification
  *  @sldev_reconf: Mutex to protect the pending data-channel lists.
  *  @pending_msgsl: Message bandwidth reservation request by this client in
  *	slots that's pending reconfiguration.
@@ -650,9 +619,6 @@ struct slim_device {
     struct list_head	mark_define;
     struct list_head	mark_suspend;
     struct list_head	mark_removal;
-    bool			notified;
-    struct list_head	dev_list;
-    struct work_struct	wd;
     struct mutex		sldev_reconf;
     u32			pending_msgsl;
     u32			cur_msgsl;
@@ -729,20 +695,6 @@ extern int slim_request_clear_inf_element(struct slim_device *sb,
 extern int slim_xfer_msg(struct slim_controller *ctrl,
 	    struct slim_device *sbdev, struct slim_ele_access *msg,
 	    u16 mc, u8 *rbuf, const u8 *wbuf, u8 len);
-
-/*
- * User message:
- * slim_user_msg: Send user message that is interpreted by destination device
- * @sb: Client handle sending the message
- * @la: Destination device for this user message
- * @mt: Message Type (Soruce-referred, or Destination-referred)
- * @mc: Message Code
- * @msg: Message structure (start offset, number of bytes) to be sent
- * @buf: data buffer to be sent
- * @len: data buffer size in bytes
- */
-extern int slim_user_msg(struct slim_device *sb, u8 la, u8 mt, u8 mc,
-		struct slim_ele_access *msg, u8 *buf, u8 len);
 /* end of message apis */
 
 /* Port management for manager device APIs */
@@ -782,8 +734,8 @@ extern int slim_dealloc_mgrports(struct slim_device *sb, u32 *hdl, int hsz);
  * Client will call slim_port_get_xfer_status to get error and/or number of
  * bytes transferred if used asynchronously.
  */
-extern int slim_port_xfer(struct slim_device *sb, u32 ph, phys_addr_t iobuf,
-		u32 len, struct completion *comp);
+extern int slim_port_xfer(struct slim_device *sb, u32 ph, u8 *iobuf, u32 len,
+		struct completion *comp);
 
 /*
  * slim_port_get_xfer_status: Poll for port transfers, or get transfer status
@@ -805,7 +757,7 @@ extern int slim_port_xfer(struct slim_device *sb, u32 ph, phys_addr_t iobuf,
  * processed from the multiple transfers.
  */
 extern enum slim_port_err slim_port_get_xfer_status(struct slim_device *sb,
-	    u32 ph, phys_addr_t *done_buf, u32 *done_len);
+	    u32 ph, u8 **done_buf, u32 *done_len);
 
 /*
  * slim_connect_src: Connect source port to channel.
@@ -983,12 +935,6 @@ extern int slim_ctrl_clk_pause(struct slim_controller *ctrl, bool wakeup,
 extern int slim_driver_register(struct slim_driver *drv);
 
 /*
- * slim_driver_unregister: Undo effects of slim_driver_register
- * @drv: Client driver to be unregistered
- */
-extern void slim_driver_unregister(struct slim_driver *drv);
-
-/*
  * slim_add_numbered_controller: Controller bring-up.
  * @ctrl: Controller to be registered.
  * A controller is registered with the framework using this API. ctrl->nr is the
@@ -1020,17 +966,14 @@ extern void slim_remove_device(struct slim_device *sbdev);
  * @ctrl: Controller with which device is enumerated.
  * @e_addr: 6-byte elemental address of the device.
  * @e_len: buffer length for e_addr
- * @laddr: Return logical address (if valid flag is false)
- * @valid: true if laddr holds a valid address that controller wants to
- *	set for this enumeration address. Otherwise framework sets index into
- *	address table as logical address.
+ * @laddr: Return logical address.
  * Called by controller in response to REPORT_PRESENT. Framework will assign
  * a logical address to this enumeration address.
  * Function returns -EXFULL to indicate that all logical addresses are already
  * taken.
  */
 extern int slim_assign_laddr(struct slim_controller *ctrl, const u8 *e_addr,
-		u8 e_len, u8 *laddr, bool valid);
+		u8 e_len, u8 *laddr);
 
 /*
  * slim_msg_response: Deliver Message response received from a device to the
@@ -1055,15 +998,6 @@ extern void slim_msg_response(struct slim_controller *ctrl, u8 *reply, u8 tid,
 extern struct slim_controller *slim_busnum_to_ctrl(u32 busnum);
 
 /*
- * slim_ctrl_add_boarddevs: Add devices registered by board-info
- * @ctrl: Controller to which these devices are to be added to.
- * This API is called by controller when it is up and running.
- * If devices on a controller were registered before controller,
- * this will make sure that they get probed when controller is up
- */
-extern void slim_ctrl_add_boarddevs(struct slim_controller *ctrl);
-
-/*
  * slim_register_board_info: Board-initialization routine.
  * @info: List of all devices on all controllers present on the board.
  * @n: number of entries.
@@ -1074,7 +1008,7 @@ extern void slim_ctrl_add_boarddevs(struct slim_controller *ctrl);
 extern int slim_register_board_info(struct slim_boardinfo const *info,
 		    unsigned n);
 #else
-static inline int slim_register_board_info(struct slim_boardinfo const *info,
+int slim_register_board_info(struct slim_boardinfo const *info,
 		    unsigned n)
 {
     return 0;
