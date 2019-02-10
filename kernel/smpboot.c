@@ -8,7 +8,7 @@
 /**
  * smpboot_prepare - generic smpboot preparation
  */
-int __cpuinit smpboot_prepare(unsigned int cpu)
+int smpboot_prepare(unsigned int cpu)
 {
 	return 0;
 }
