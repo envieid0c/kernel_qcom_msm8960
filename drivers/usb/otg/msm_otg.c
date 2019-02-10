@@ -2075,6 +2075,8 @@ static void msm_chg_block_on(struct msm_otg *motg)
 		/* Clear alt interrupt latch and enable bits */
 		ulpi_write(phy, 0x1F, 0x92);
 		ulpi_write(phy, 0x1F, 0x95);
+		/* re-enable DP and DM pull down resistors */
+		ulpi_write(phy, 0x6, 0xB);
 		udelay(100);
 		break;
 	default:
