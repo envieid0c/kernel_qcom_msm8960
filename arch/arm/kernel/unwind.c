@@ -151,7 +151,7 @@ static const struct unwind_idx *search_index(unsigned long addr,
 	if (likely(start->addr_offset <= addr_prel31))
 		return start;
 	else {
-		pr_warning("unwind: Unknown symbol address %08lx\n", addr);
+		pr_debug("unwind: Unknown symbol address %08lx\n", addr);
 		return NULL;
 	}
 }
