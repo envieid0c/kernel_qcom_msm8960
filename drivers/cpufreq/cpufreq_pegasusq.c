@@ -57,9 +57,9 @@
 #define DEF_START_DELAY				(0)
 
 #define UP_THRESHOLD_AT_MIN_FREQ		(40)
-#define FREQ_FOR_RESPONSIVENESS			(2265600)
+#define FREQ_FOR_RESPONSIVENESS			(1350000)
 /* for fast decrease */
-#define FREQ_FOR_FAST_DOWN			(1574400)
+#define FREQ_FOR_FAST_DOWN			(918000)
 #define UP_THRESHOLD_AT_FAST_DOWN		(80)
 
 static unsigned int min_sampling_rate;
@@ -85,7 +85,7 @@ struct cpu_dbs_info_s {
     u64 prev_cpu_iowait;
     u64 prev_cpu_wall;
     unsigned int prev_cpu_wall_delta;
-    u64 prev_cpu_nice;
+    cputime64_t prev_cpu_nice;
     struct cpufreq_policy *cur_policy;
     struct delayed_work work;
     struct cpufreq_frequency_table *freq_table;
@@ -153,18 +153,20 @@ static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
 }
 
 /* function has been moved to cpufreq.c
-static inline u64 get_cpu_idle_time(unsigned int cpu, u64 *wall)
+static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
 {
     u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
+
     if (idle_time == -1ULL)
 	return get_cpu_idle_time_jiffy(cpu, wall);
     else
 	idle_time += get_cpu_iowait_time_us(cpu, wall);
+
     return idle_time;
 }
 */
 
-static inline u64 get_cpu_iowait_time(unsigned int cpu, u64 *wall)
+static inline cputime64_t get_cpu_iowait_time(unsigned int cpu, cputime64_t *wall)
 {
     u64 iowait_time = get_cpu_iowait_time_us(cpu, wall);
 
