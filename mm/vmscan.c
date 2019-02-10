@@ -1365,7 +1365,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
 		zone_idx(zone),
 		nr_scanned, nr_reclaimed,
 		sc->priority,
-		trace_shrink_flags(file, 0));
+		trace_shrink_flags(file));
 	return nr_reclaimed;
 }
 
