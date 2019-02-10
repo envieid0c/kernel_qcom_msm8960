@@ -61,6 +61,9 @@ void synchronize_irq(unsigned int irq)
 		inprogress = irqd_irq_inprogress(&desc->irq_data);
 		raw_spin_unlock_irqrestore(&desc->lock, flags);
 
+		if (!notify && old_notify)
+			cancel_work_sync(&old_notify->work);
+
 		/* Oops, that failed? */
 	} while (inprogress);
 
