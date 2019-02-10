@@ -420,7 +420,7 @@ static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
  * Freed memory:
  * devfreq
  */
-static void _remove_devfreq(struct devfreq *devfreq, bool skip)
+static void _remove_devfreq(struct devfreq *devfreq)
 {
 	if (!mutex_is_locked(&devfreq->lock)) {
 		WARN(true, "devfreq->lock must be locked by the caller.\n");
@@ -440,18 +440,6 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
 	if (devfreq->profile->exit)
 		devfreq->profile->exit(devfreq->dev.parent);
 
-	if (devfreq->governor->exit)
-		devfreq->governor->exit(devfreq);
-
-	if (!skip && get_device(&devfreq->dev)) {
-		device_unregister(&devfreq->dev);
-		put_device(&devfreq->dev);
-	}
-
-	if (!devfreq->governor->no_central_polling)
-		list_del(&devfreq->node);
-
-	mutex_unlock(&devfreq->lock);
 	mutex_destroy(&devfreq->lock);
 
 	kfree(devfreq);
@@ -462,8 +450,6 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
  * @dev:	the devfreq device
  *
  * This calls _remove_devfreq() if _remove_devfreq() is not called.
- * Note that devfreq_dev_release() could be called by _remove_devfreq() as
- * well as by others unregistering the device.
  */
 static void devfreq_dev_release(struct device *dev)
 {
@@ -501,7 +487,7 @@ static void devfreq_dev_release(struct device *dev)
 	}
 
 	/* devfreq->lock is unlocked and removed in _removed_devfreq() */
-	_remove_devfreq(devfreq, true);
+	_remove_devfreq(devfreq);
 
 out:
 	if (central_polling)
@@ -697,6 +683,9 @@ int devfreq_remove_device(struct devfreq *devfreq)
 
 	if (!devfreq)
 		return -EINVAL;
+
+	device_unregister(&devfreq->dev);
+	put_device(&devfreq->dev);
 
 	central_polling = !devfreq->governor->no_central_polling;
 
