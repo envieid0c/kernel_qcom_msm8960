@@ -122,7 +122,7 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
 			err = walk->hugetlb_entry(pte, hmask, addr, next, walk);
 		if (err)
 			return err;
-	} while (addr = next, addr != end);
+	} while (addr = next, addr < end);
 
 	return 0;
 }
