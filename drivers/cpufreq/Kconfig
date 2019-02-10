@@ -252,7 +252,6 @@ config CPU_FREQ_GOV_ALUCARD
     tristate "'alucard' cpufreq governor"
     depends on CPU_FREQ
 
-
 config CPU_FREQ_GOV_ADAPTIVE
     tristate "'adaptive' cpufreq policy governor"
     help
