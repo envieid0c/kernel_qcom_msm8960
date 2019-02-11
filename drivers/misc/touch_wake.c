@@ -108,13 +108,13 @@ static void touchwake_late_resume(struct early_suspend *h)
 out:
     device_suspended = false;
 }
-
+/*
 static struct early_suspend touchwake_suspend_data = {
     .level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
     .suspend = touchwake_early_suspend,
     .resume = touchwake_late_resume,
 };
-
+*/
 static void touchwake_touchoff(struct work_struct *touchoff_work)
 {
     touchwake_disable_touch();
