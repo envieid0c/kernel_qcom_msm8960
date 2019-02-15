@@ -676,29 +676,24 @@ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
 static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
 					    struct hrtimer_clock_base *base)
 {
-#ifdef CONFIG_PREEMPT_RT_BASE
-again:
 	if (base->cpu_base->hres_active && hrtimer_reprogram(timer, base)) {
+#ifdef CONFIG_PREEMPT_RT_BASE
 		/*
                  * Move softirq based timers away from the rbtree in
                  * case it expired already. Otherwise we would have a
                  * stale base->first entry until the softirq runs.
                  */
-                if (!hrtimer_rt_defer(timer)) {
-                        ktime_t now = ktime_get();
-
-                         __run_hrtimer(timer, &now);
-                        /*
-                         * __run_hrtimer might have requeued timer and
-                         * it could be base->first again.
-                         */
-                        if (&timer->node == base->active.next)
-                                goto again;
-                        return 1;
-		}
-#else
-	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
+                if (!hrtimer_rt_defer(timer))
+			return -ETIME;
 #endif
+		raw_spin_unlock(&base->cpu_base->lock);
+		raise_softirq_irqoff(HRTIMER_SOFTIRQ);
+		raw_spin_lock(&base->cpu_base->lock);
+
+		return 0;
+	}
+
+	return 0;
 }
 
 static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
@@ -1081,8 +1076,18 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
 	 *
 	 * XXX send_remote_softirq() ?
 	 */
-	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-		&& hrtimer_enqueue_reprogram(timer, new_base)) {
+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
+		ret = hrtimer_enqueue_reprogram(timer, new_base)
+		if (ret) {
+			/*
+			 * In case we failed to reprogram the timer (mostly
+			 * because out current timer is already elapsed),
+			 * remove it again and report a failure. This avoids
+				 * stale base->first entries.
+			 */
+			__remove_hrtimer(timer, new_base,
+				timer->state & HRTIMER_STATE_CALLBACK, 0);
+		}
 		if (wakeup) {
 			/*
 			 * We need to drop cpu_base->lock to avoid a
