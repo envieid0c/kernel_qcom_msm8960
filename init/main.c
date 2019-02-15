@@ -70,6 +70,7 @@
 #include <linux/perf_event.h>
 #include <linux/random.h>
 #include <linux/sched_clock.h>
+#include <linux/posix-timers.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
