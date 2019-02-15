@@ -1407,6 +1407,21 @@ wait_to_die:
 	return 0;
 }
 
+static inline int __fastpath_timer_check(struct task_struct *tsk)
+{
+	/* tsk == current, ensure it is safe to use ->signal/sighand */
+	if (unlikely(tsk->exit_state))
+		return 0;
+
+	if (!task_cputime_zero(&tsk->cputime_expires))
+		return 1;
+
+	if (!task_cputime_zero(&tsk->signal->cputime_expires))
+		return 1;
+
+	return 0;
+}
+
 void run_posix_cpu_timers(struct task_struct *tsk)
 {
 	unsigned long cpu = smp_processor_id();
@@ -1419,7 +1434,7 @@ void run_posix_cpu_timers(struct task_struct *tsk)
 	tasklist = per_cpu(posix_timer_tasklist, cpu);
 
 	/* check to see if we're already queued */
-	if (!tsk->posix_timer_list) {
+	if (!tsk->posix_timer_list && __fastpath_timer_check(tsk)) {
 		get_task_struct(tsk);
 		if (tasklist) {
 			tsk->posix_timer_list = tasklist;
@@ -1432,7 +1447,7 @@ void run_posix_cpu_timers(struct task_struct *tsk)
 		}
 		per_cpu(posix_timer_tasklist, cpu) = tsk;
 	}
-	/* XXX signal the thread somehow */
+
 	wake_up_process(per_cpu(posix_timer_task, cpu));
 }
 
