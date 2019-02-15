@@ -672,7 +672,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 	unsigned long flags;
 
 	spin_lock_irqsave(&zone->lock, flags);
-	zone->all_unreclaimable = 0;
+	//zone->all_unreclaimable = 0;
 	zone->pages_scanned = 0;
 
 	while (!list_empty(list)) {
@@ -740,7 +740,7 @@ static void free_one_page(struct zone *zone,
 	unsigned long flags;
 
 	spin_lock_irqsave(&zone->lock, flags);
-	zone->all_unreclaimable = 0;
+	//zone->all_unreclaimable = 0;
 	zone->pages_scanned = 0;
 
 	__free_one_page(page, zone, order, migratetype);
@@ -2277,8 +2277,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 		struct page *page;
 
 		/* Page migration frees to the PCP lists but we want merging */
-		drain_pages(get_cpu());
-		put_cpu();
+		drain_pages(get_cpu_light());
+		put_cpu_light();
 
 		page = get_page_from_freelist(gfp_mask, nodemask,
 				order, zonelist, high_zoneidx,
