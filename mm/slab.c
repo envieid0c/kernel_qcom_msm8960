@@ -724,7 +724,7 @@ static DEFINE_MUTEX(cache_chain_mutex);
 static struct list_head cache_chain;
 
 static DEFINE_PER_CPU(struct delayed_work, slab_reap_work);
-
+static DEFINE_PER_CPU(struct list_head, slab_free_list);
 static DEFINE_LOCAL_IRQ_LOCK(slab_lock);
 
 #ifndef CONFIG_PREEMPT_RT_BASE
@@ -740,13 +740,38 @@ slab_on_each_cpu(void (*func)(void *arg, int this_cpu), void *arg)
 {
 	unsigned int i;
 
-	for_each_online_cpu(i) {
-		spin_lock_irq(&per_cpu(slab_lock, i).lock);
+	for_each_online_cpu(i)
 		func(arg, i);
-		spin_unlock_irq(&per_cpu(slab_lock, i).lock);
-	}
 }
 #endif
+
+static void free_delayed(struct list_head *h)
+{
+	while(!list_empty(h)) {
+		struct page *page = list_first_entry(h, struct page, lru);
+
+		list_del(&page->lru);
+		__free_pages(page, page->index);
+	}
+}
+
+static void unlock_l3_and_free_delayed(spinlock_t *list_lock)
+{
+	LIST_HEAD(tmp);
+
+	list_splice_init(&__get_cpu_var(slab_free_list), &tmp);
+	local_spin_unlock_irq(slab_lock, list_lock);
+	free_delayed(&tmp);
+}
+
+static void unlock_slab_and_free_delayed(unsigned long flags)
+{
+	LIST_HEAD(tmp);
+
+	list_splice_init(&__get_cpu_var(slab_free_list), &tmp);
+	local_unlock_irqrestore(slab_lock, flags);
+	free_delayed(&tmp);
+}
 
 static inline struct array_cache *cpu_cache_get(struct kmem_cache *cachep)
 {
@@ -1243,7 +1268,7 @@ static void cpuup_canceled(long cpu)
 			free_block(cachep, nc->entry, nc->avail, node);
 
 		if (!cpumask_empty(mask)) {
-			local_spin_unlock_irq(slab_lock, &l3->list_lock);
+			unlock_l3_and_free_delayed(&l3->list_lock);
 			goto free_array_cache;
 		}
 
@@ -1257,7 +1282,7 @@ static void cpuup_canceled(long cpu)
 		alien = l3->alien;
 		l3->alien = NULL;
 
-		local_spin_unlock_irq(slab_lock, &l3->list_lock);
+		unlock_l3_and_free_delayed(&l3->list_lock);
 
 		kfree(shared);
 		if (alien) {
@@ -1538,6 +1563,8 @@ void __init kmem_cache_init(void)
 		use_alien_caches = 0;
 
 	local_irq_lock_init(slab_lock);
+	for_each_possible_cpu(i)
+		INIT_LIST_HEAD(&per_cpu(slab_free_list, i));
 
 	for (i = 0; i < NUM_INIT_LISTS; i++) {
 		kmem_list3_init(&initkmem_list3[i]);
@@ -1867,11 +1894,13 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
 /*
  * Interface to system's page release.
  */
-static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+static void kmem_freepages(struct kmem_cache *cachep, void *addr, bool delayed)
 {
 	unsigned long i = (1 << cachep->gfporder);
-	struct page *page = virt_to_page(addr);
+	struct page *page, *basepage = virt_to_page(addr);
 	const unsigned long nr_freed = i;
+
+	page = basepage;
 
 	kmemcheck_free_shadow(page, cachep->gfporder);
 
@@ -1888,7 +1917,13 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
 	}
 	if (current->reclaim_state)
 		current->reclaim_state->reclaimed_slab += nr_freed;
-	free_pages((unsigned long)addr, cachep->gfporder);
+
+	if (!delayed) {
+		free_pages((unsigned long)addr, cachep->gfporder);
+	} else {
+		basepage->index = cachep->gfporder;
+		list_add(&basepage->lru, &__get_cpu_var(slab_free_list));
+	}
 }
 
 static void kmem_rcu_free(struct rcu_head *head)
@@ -1896,7 +1931,7 @@ static void kmem_rcu_free(struct rcu_head *head)
 	struct slab_rcu *slab_rcu = (struct slab_rcu *)head;
 	struct kmem_cache *cachep = slab_rcu->cachep;
 
-	kmem_freepages(cachep, slab_rcu->addr);
+	kmem_freepages(cachep, slab_rcu->addr, false);
 	if (OFF_SLAB(cachep))
 		kmem_cache_free(cachep->slabp_cache, slab_rcu);
 }
@@ -2115,7 +2150,8 @@ static void slab_destroy_debugcheck(struct kmem_cache *cachep, struct slab *slab
  * Before calling the slab must have been unlinked from the cache.  The
  * cache-lock is not held/needed.
  */
-static void slab_destroy(struct kmem_cache *cachep, struct slab *slabp)
+static void slab_destroy(struct kmem_cache *cachep, struct slab *slabp,
+			bool delayed)
 {
 	void *addr = slabp->s_mem - slabp->colouroff;
 
@@ -2128,7 +2164,7 @@ static void slab_destroy(struct kmem_cache *cachep, struct slab *slabp)
 		slab_rcu->addr = addr;
 		call_rcu(&slab_rcu->head, kmem_rcu_free);
 	} else {
-		kmem_freepages(cachep, addr);
+		kmem_freepages(cachep, addr, delayed);
 		if (OFF_SLAB(cachep))
 			kmem_cache_free(cachep->slabp_cache, slabp);
 	}
@@ -2648,9 +2684,15 @@ static void do_drain(void *arg)
 	__do_drain(arg, smp_processor_id());
 }
 #else
-static void do_drain(void *arg, int this_cpu)
+static void do_drain(void *arg, int cpu)
 {
-	__do_drain(arg, this_cpu);
+	LIST_HEAD(tmp);
+
+	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
+	__do_drain(arg, cpu);
+	list_splice_init(&per_cpu(slab_free_list, cpu), &tmp);
+	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
+	free_delayed(&tmp);
 }
 #endif
 
@@ -2708,7 +2750,7 @@ static int drain_freelist(struct kmem_cache *cache,
 		 */
 		l3->free_objects -= cache->num;
 		local_spin_unlock_irq(slab_lock, &l3->list_lock);
-		slab_destroy(cache, slabp);
+		slab_destroy(cache, slabp, false);
 		nr_freed++;
 	}
 out:
@@ -3043,7 +3085,7 @@ static int cache_grow(struct kmem_cache *cachep,
 	spin_unlock(&l3->list_lock);
 	return 1;
 opps1:
-	kmem_freepages(cachep, objp);
+	kmem_freepages(cachep, objp, false);
 failed:
 	if (local_flags & __GFP_WAIT)
 		local_lock_irq(slab_lock);
@@ -3697,7 +3739,7 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int nr_objects,
 				 * a different cache, refer to comments before
 				 * alloc_slabmgmt.
 				 */
-				slab_destroy(cachep, slabp);
+				slab_destroy(cachep, slabp, true);
 			} else {
 				list_add(&slabp->list, &l3->slabs_free);
 			}
@@ -3959,12 +4001,12 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
 {
 	unsigned long flags;
 
-	local_lock_irqsave(slab_lock, flags);
+//	local_lock_irqsave(slab_lock, flags);
 	debug_check_no_locks_freed(objp, obj_size(cachep));
 	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
 		debug_check_no_obj_freed(objp, obj_size(cachep));
 	__cache_free(cachep, objp, __builtin_return_address(0));
-	local_unlock_irqrestore(slab_lock, flags);
+	unlock_slab_and_free_delayed(flags);
 
 	trace_kmem_cache_free(_RET_IP_, objp);
 }
@@ -4050,7 +4092,8 @@ static int alloc_kmemlist(struct kmem_cache *cachep, gfp_t gfp)
 			}
 			l3->free_limit = (1 + nr_cpus_node(node)) *
 					cachep->batchcount + cachep->num;
-			local_spin_unlock_irq(slab_lock, &l3->list_lock);
+			unlock_l3_and_free_delayed(&l3->list_lock);
+
 			kfree(shared);
 			free_alien_cache(new_alien);
 			continue;
@@ -4116,7 +4159,9 @@ static void do_ccupdate_local(void *info)
 #else
 static void do_ccupdate_local(void *info, int cpu)
 {
+	spin_lock_irq(&per_cpu(slab_lock, cpu).lock);
 	__do_ccupdate_local(info, cpu);
+	spin_unlock_irq(&per_cpu(slab_lock, cpu).lock);
 }
 #endif
 
@@ -4158,8 +4203,8 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
 		local_spin_lock_irq(slab_lock,
 					&cachep->nodelists[cpu_to_mem(i)]->list_lock);
 		free_block(cachep, ccold->entry, ccold->avail, cpu_to_mem(i));
-		local_spin_unlock_irq(slab_lock,
-					&cachep->nodelists[cpu_to_mem(i)]->list_lock);
+
+		unlock_l3_and_free_delayed(&cachep->nodelists[cpu_to_mem(i)]->list_lock);
 		kfree(ccold);
 	}
 	kfree(new);
