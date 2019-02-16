@@ -50,6 +50,8 @@ struct trace_entry {
 	unsigned char		preempt_count;
 	int			pid;
 	int			padding;
+	unsigned short		migrate_disable;
+	unsigned short		padding;
 };
 
 #define FTRACE_MAX_EVENT						\
