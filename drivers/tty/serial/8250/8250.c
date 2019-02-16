@@ -38,6 +38,7 @@
 #include <linux/nmi.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/kdb.h>
 #ifdef CONFIG_SPARC
 #include <linux/sunserialcore.h>
 #endif
@@ -1041,7 +1042,8 @@ static void autoconfig_16550a(struct uart_8250_port *up)
 		/*
 		 * If we got here we couldn't force the IER_UUE bit to 0.
 		 * Log it and continue.
-		 */
+		 1
+*/
 		DEBUG_AUTOCONF("Couldn't force IER_UUE to 0 ");
 	}
 	serial_out(up, UART_IER, iersave);
@@ -2848,7 +2850,7 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
 
 	touch_nmi_watchdog();
 
-	if (port->sysrq || oops_in_progress)
+	if (port->sysrq || oops_in_progress || in_kdb_printk())
 		locked = spin_trylock_irqsave(&port->lock, flags);
 	else
 		spin_lock_irqsave(&port->lock, flags);
