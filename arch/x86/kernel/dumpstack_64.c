@@ -21,9 +21,13 @@
 		(N_EXCEPTION_STACKS + DEBUG_STKSZ/EXCEPTION_STKSZ - 2)
 
 static char x86_stack_ids[][8] = {
+#if DEBUG_STACK > 0
 		[ DEBUG_STACK-1			]	= "#DB",
+#endif
 		[ NMI_STACK-1			]	= "NMI",
+#if DOUBLEFAULT_STACK > 0
 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+#endif
 		[ MCE_STACK-1			]	= "#MC",
 #if DEBUG_STKSZ > EXCEPTION_STKSZ
 		[ N_EXCEPTION_STACKS ...
