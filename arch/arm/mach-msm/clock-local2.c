@@ -28,6 +28,10 @@
 
 #include "clock-local2.h"
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+#include <linux/math64.h>
+#endif
+
 /*
  * When enabling/disabling a clock, check the halt bit up to this number
  * number of times (with a 1 us delay in between) before continuing.
