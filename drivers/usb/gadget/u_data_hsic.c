@@ -869,7 +869,11 @@ module_param(record_timestamp, uint, S_IRUGO | S_IWUSR);
 
 static struct timestamp_buf dbg_data = {
 	.idx = 0,
+#ifndef CONFIG_PREEMPT_RT_FULL
 	.lck = __RW_LOCK_UNLOCKED(lck)
+#else
+	.lck = __RW_LOCK_UNLOCKED(dbg_data.lck)
+#endif
 };
 
 /*get_timestamp - returns time of day in us */

@@ -154,7 +154,11 @@ static struct {
 	rwlock_t lck;   /* lock */
 } dbg_hsic_ctrl = {
 	.idx = 0,
+#ifndef CONFIG_PREEMPT_RT_FULL
 	.lck = __RW_LOCK_UNLOCKED(lck)
+#else
+	.lck = __RW_LOCK_UNLOCKED(dbg_hsic_ctrl.lck)
+#endif
 };
 
 static struct {
@@ -163,7 +167,11 @@ static struct {
 	rwlock_t lck;   /* lock */
 } dbg_hsic_data = {
 	.idx = 0,
+#ifndef CONFIG_PREEMPT_RT_FULL
 	.lck = __RW_LOCK_UNLOCKED(lck)
+#else
+	.lck = __RW_LOCK_UNLOCKED(dbg_hsic_data.lck)
+#endif
 };
 
 /**
