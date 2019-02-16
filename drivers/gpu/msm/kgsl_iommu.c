@@ -1775,8 +1775,11 @@ kgsl_iommu_unmap(struct kgsl_pagetable *pt,
 	 * If it does not, then take the device mutex which is required for
 	 * flushing the tlb
 	 */
-	if (!mutex_is_locked(&device->mutex) ||
-		device->mutex.owner != current) {
+	if (!mutex_is_locked(&device->mutex)
+#ifndef CONFIG_PREEMPT_RT_FULL
+		|| device->mutex.owner != current
+#endif
+	) {
 		mutex_lock(&device->mutex);
 		lock_taken = 1;
 	}
