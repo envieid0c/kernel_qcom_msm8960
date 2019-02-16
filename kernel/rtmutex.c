@@ -1374,6 +1374,25 @@ int __sched rt_mutex_lock_interruptible(struct rt_mutex *lock)
 }
 EXPORT_SYMBOL_GPL(rt_mutex_lock_interruptible);
 
+/**
+ * rt_mutex_lock_killable - lock a rt_mutex killable
+ *
+ * @lock:		the rt_mutex to be locked
+ * @detect_deadlock:	deadlock detection on/off
+ *
+ * Returns:
+ *  0		on success
+ * -EINTR	when interrupted by a signal
+ * -EDEADLK	when the lock would deadlock (when deadlock detection is on)
+ */
+int __sched rt_mutex_lock_killable(struct rt_mutex *lock)
+{
+	might_sleep();
+
+	return rt_mutex_fastlock(lock, TASK_KILLABLE, rt_mutex_slowlock);
+}
+EXPORT_SYMBOL_GPL(rt_mutex_lock_killable);
+
 /*
  * Futex variant with full deadlock detection.
  */
