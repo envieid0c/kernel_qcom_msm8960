@@ -1077,7 +1077,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
 	 * XXX send_remote_softirq() ?
 	 */
 	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
-		ret = hrtimer_enqueue_reprogram(timer, new_base)
+		ret = hrtimer_enqueue_reprogram(timer, new_base);
 		if (ret) {
 			/*
 			 * In case we failed to reprogram the timer (mostly
