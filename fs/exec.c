@@ -893,12 +893,14 @@ static int exec_mmap(struct mm_struct *mm)
 	}
     }
     task_lock(tsk);
+    local_irq_disable_rt();
     active_mm = tsk->active_mm;
     tsk->mm = mm;
     tsk->active_mm = mm;
     activate_mm(active_mm, mm);
     tsk->mm->vmacache_seqnum = 0;
     vmacache_flush(tsk);
+    local_irq_enable_rt();
     task_unlock(tsk);
     arch_pick_mmap_layout(mm);
     if (old_mm) {
