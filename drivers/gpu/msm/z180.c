@@ -158,7 +158,11 @@ static struct z180_device device_2d0 = {
 		.pwr_log = KGSL_LOG_LEVEL_DEFAULT,
 		.pm_dump_enable = 0,
 	},
+#ifdef CONFIG_PREEMPT_RT_FULL
+	.cmdwin_lock = __SPIN_LOCK_UNLOCKED(device_2d1.cmdwin_lock),
+#else
 	.cmdwin_lock = __SPIN_LOCK_INITIALIZER(device_2d1.cmdwin_lock),
+#endif
 };
 
 static struct z180_device device_2d1 = {
@@ -185,7 +189,11 @@ static struct z180_device device_2d1 = {
 		.iomemname = KGSL_2D1_REG_MEMORY,
 		.ftbl = &z180_functable,
 	},
+#ifdef CONFIG_PREEMPT_RT_FULL
+	.cmdwin_lock = __SPIN_LOCK_UNLOCKED(device_2d1.cmdwin_lock),
+#else
 	.cmdwin_lock = __SPIN_LOCK_INITIALIZER(device_2d1.cmdwin_lock),
+#endif
 };
 
 static irqreturn_t z180_irq_handler(struct kgsl_device *device)
