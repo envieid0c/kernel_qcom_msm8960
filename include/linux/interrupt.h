@@ -671,6 +671,12 @@ void tasklet_hrtimer_cancel(struct tasklet_hrtimer *ttimer)
 	tasklet_kill(&ttimer->tasklet);
 }
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+extern void softirq_early_init(void);
+#else
+static inline void softirq_early_init(void) { }
+#endif
+
 /*
  * Autoprobing for irqs:
  *
