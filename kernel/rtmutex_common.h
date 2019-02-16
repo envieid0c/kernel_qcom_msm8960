@@ -49,6 +49,7 @@ struct rt_mutex_waiter {
 	struct rb_node          pi_tree_entry;
 	struct task_struct	*task;
 	struct rt_mutex		*lock;
+	bool			savestate;
 #ifdef CONFIG_DEBUG_RT_MUTEXES
 	unsigned long		ip;
 	struct pid		*deadlock_task_pid;
@@ -139,5 +140,13 @@ extern int rt_mutex_timed_futex_lock(struct rt_mutex *l, struct hrtimer_sleeper 
 #else
 # include "rtmutex.h"
 #endif
+
+static inline void
+rt_mutex_init_waiter(struct rt_mutex_waiter *waiter, bool savestate)
+{
+	debug_rt_mutex_init_waiter(waiter);
+	waiter->task = NULL;
+	waiter->savestate = savestate;
+}
 
 #endif
