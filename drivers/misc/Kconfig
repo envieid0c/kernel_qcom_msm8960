@@ -674,7 +674,7 @@ config UID_CPUTIME
 
 config TOUCH_WAKE
 	bool "Touch Wake support"
-	default y
+	default n
 	help
 	  Say Y here to enable Touch Wake
 
