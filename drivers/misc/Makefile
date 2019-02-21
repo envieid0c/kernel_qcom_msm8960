@@ -75,3 +75,4 @@ obj-$(CONFIG_TOUCH_WAKE) += touch_wake.o
 obj-$(CONFIG_TOUCH_WAKE_VIBRATION) += touch_wake_vibro.o
 obj-$(CONFIG_SLIMPORT_ANX7808)	+= slimport_anx7808/
 obj-$(CONFIG_UID_CPUTIME) += uid_cputime.o
+obj-$(CONFIG_BLX)	+= blx.o
