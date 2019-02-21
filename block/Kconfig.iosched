@@ -12,16 +12,14 @@ config IOSCHED_NOOP
 	  that do their own scheduling and require only minimal assistance from
 	  the kernel.
 
-config IOSCHED_TEST
-	tristate "Test I/O scheduler"
-	depends on DEBUG_FS
-	default n
+config IOSCHED_ANXIETY
+	tristate "Anxiety I/O scheduler"
+	default y
 	---help---
-	  The test I/O scheduler is a duplicate of the noop scheduler with
-	  addition of test utlity.
-	  It allows testing a block device by dispatching specific requests
-	  according to the test case and declare PASS/FAIL according to the
-	  requests completion error code.
+	  The Anxiety I/O scheduler prioritizes latency over everything
+	  else. It uses a simple algorithm that selects from FIFO queues
+	  implemented as doubly linked lists and prioritizes reads over
+	  writes.
 
 config IOSCHED_DEADLINE
 	tristate "Deadline I/O scheduler"
@@ -134,6 +132,17 @@ config IOSCHED_ZEN
       FCFS, dispatches are back-inserted, deadlines ensure fairness.
       Should work best with devices where there is no travel delay.
 
+config IOSCHED_SWITCHER
+	bool "Use Noop while the screen is off"
+	depends on IOSCHED_NOOP
+	---help---
+	  This enables a driver that switches the I/O scheduler for a single
+	  block device to Noop when the screen turns off, and back to its
+	  original I/O scheduler after a delay when the screen is turned back
+	  on. It requires being manually initialized from a different driver
+	  in order to grab the request_queue pointer that should have its I/O
+	  scheduler switched to Noop when the screen turns off.
+
 choice
 	prompt "Default I/O scheduler"
 	default DEFAULT_CFQ
@@ -156,6 +165,9 @@ choice
 		  as desired, independently of the disk parameters and with
 		  any workload. It also tries to guarantee low latency to
 		  interactive and soft real-time applications.
+
+	config DEFAULT_ANXIETY
+	bool "Anxiety" if IOSCHED_ANXIETY=y
 
 	config DEFAULT_MAPLE
 		bool "Maple" if IOSCHED_MAPLE=y
@@ -200,6 +212,7 @@ config DEFAULT_IOSCHED
 	default "fiops" if DEFAULT_FIOPS
 	default "vr" if DEFAULT_VR
 	default "zen" if DEFAULT_ZEN
+	default "anxiety" if DEFAULT_ANXIETY
 
 endmenu
 
