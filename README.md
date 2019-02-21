@@ -12,6 +12,9 @@ This kernel feature is :
 - Linux Kernel v3.4.113
 - Compatibility with CM And LineageOS based ROM [Android 8.1+]
 - Added Double Tap 2 Wake Feature (in developing)
+- ZRAM + ZSWAP + FRONTSWAP + VMALLOC SAVING
+- Kernel Asynchronous I/O is used iov_iter interface
+- Battery Life eXtender (BLX)
 - CPU Governor's
 : Alucard, BioShock, Blu Active, Conservative, Dancedance, Darkness, Dynamic Interactive, Hyper, IntelliMM, Interactive, Nigthmare, Pegasus, Perfomance, Powersave, Skuractive, SmartassV2, TripDroid, Userspace & Wheatley
 -  I/O Sched Governor's
@@ -41,5 +44,5 @@ This kernel feature is :
 - Combine MSM & Intelli Thermal (in developing)
 - Support F2FS File System Support
 - Optimized I/O Sched
-- Compiled using GCC 5.5.0 - LTO
+- Compiled using GCC 7.4.1 - LTO
 #PRIVATE PROJECT
