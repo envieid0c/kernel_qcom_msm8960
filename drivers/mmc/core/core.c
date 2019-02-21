@@ -55,6 +55,9 @@ extern void kernel_restart(char *cmd);
  */
 #define MMC_BKOPS_MAX_TIMEOUT	(30 * 1000) /* max time to wait in ms */
 
+/* Flushing a large amount of cached data may take a long time. */
+#define MMC_FLUSH_REQ_TIMEOUT_MS 90000 /* msec */
+
 static struct workqueue_struct *workqueue;
 
 /*
