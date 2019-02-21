@@ -57,7 +57,7 @@ extern void kernel_restart(char *cmd);
 
 /* Flushing a large amount of cached data may take a long time. */
 #define MMC_FLUSH_REQ_TIMEOUT_MS 90000 /* msec */
-
+#define MMC_CACHE_DISBALE_TIMEOUT_MS 180000 /* msec */
 static struct workqueue_struct *workqueue;
 
 /*
@@ -2702,11 +2702,12 @@ int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
 		enable = !!enable;
 
 		if (card->ext_csd.cache_ctrl ^ enable) {
-			timeout = enable ? card->ext_csd.generic_cmd6_time : 0;
+		if (!enable)
+			timeout = MMC_CACHE_DISBALE_TIMEOUT_MS;
 			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 					EXT_CSD_CACHE_CTRL, enable, timeout);
-			if (err)
-				pr_err("%s: cache %s error %d\n",
+			if (err == -ETIMEDOUT && !enable)
+				pr_err("%s:cache disable operation timeout\n",
 						mmc_hostname(card->host),
 						enable ? "on" : "off",
 						err);
