@@ -1337,6 +1337,21 @@ EXPORT_SYMBOL(mem_text_write_kernel_word);
 
 extern char __init_data[];
 
+static void __init reserve_virtual_lowmem(phys_addr_t start, phys_addr_t end)
+{
+#ifdef CONFIG_ENABLE_VMALLOC_SAVE
+	struct vm_struct *vm;
+
+	vm = early_alloc_aligned(sizeof(*vm), __alignof__(*vm));
+	vm->addr = (void *)__phys_to_virt(start);
+	vm->size = end - start;
+	vm->flags = VM_LOWMEM;
+	vm->caller = reserve_virtual_lowmem;
+	vm_area_add_early(vm);
+	mark_vmalloc_reserved_area(vm->addr, vm->size);
+#endif
+}
+
 static void __init map_lowmem(void)
 {
 	struct memblock_region *reg;
@@ -1417,6 +1432,7 @@ static void __init map_lowmem(void)
 	map.type = MT_MEMORY;
 
 	create_mapping(&map, true);
+	reserve_virtual_lowmem(start, end);
 #endif
 
 	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));

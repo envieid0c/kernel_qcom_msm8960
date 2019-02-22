@@ -70,6 +70,7 @@ extern u32 arm_dma_limit;
 #define arm_dma_limit ((u32)~0)
 #endif
 
+#define MAX_HOLE_ADDRESS    (PHYS_OFFSET + 0x10000000)
 extern phys_addr_t arm_lowmem_limit;
 
 void __init bootmem_init(void);
