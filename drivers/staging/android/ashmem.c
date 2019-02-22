@@ -267,7 +267,7 @@ static loff_t ashmem_llseek(struct file *file, loff_t offset, int origin)
 		goto out;
 	}
 
-	ret = asma->file->f_op->llseek(asma->file, offset, origin);
+	ret = vfs_llseek(asma->file, offset, origin);
 	if (ret < 0)
 		goto out;
 
@@ -320,6 +320,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
 			ret = PTR_ERR(vmfile);
 			goto out;
 		}
+		vmfile->f_mode |= FMODE_LSEEK;
 		asma->file = vmfile;
 	}
 	get_file(asma->file);
