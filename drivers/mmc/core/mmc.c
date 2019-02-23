@@ -1268,7 +1268,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	}
 
 	/*
-	/*
 	 * Activate highest bus speed mode supported by both host and card.
 	 */
 	err = mmc_select_bus_speed(card, ext_csd);
