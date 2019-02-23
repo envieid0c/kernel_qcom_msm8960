@@ -1683,6 +1683,13 @@ config ASMP
 	  Automatically hotplugs the multiple cpu cores on and off
 	  based on cpu load and suspend state
 
+config HIMA_HOTPLUG
+	bool "Enable hima-hotplug cpu hotplug driver"
+	depends on STATE_NOTIFIER
+	default n
+	help
+	  Generic cpu hotplugging driver for ARM SOCs
+
 config MSM_AVS_HW
 	bool "Enable Adaptive Voltage Scaling (AVS)"
 	default n
