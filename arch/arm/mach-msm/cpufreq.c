@@ -27,7 +27,6 @@
 #include <linux/cpumask.h>
 #include <linux/sched.h>
 #include <linux/suspend.h>
-#include <trace/events/power.h>
 #include <mach/socinfo.h>
 #include <mach/cpufreq.h>
 
@@ -44,32 +43,12 @@ struct cpufreq_work_struct {
 static DEFINE_PER_CPU(struct cpufreq_work_struct, cpufreq_work);
 static struct workqueue_struct *msm_cpufreq_wq;
 
-/* maxscroff */
-uint32_t maxscroff_freq = 729600;
-uint32_t maxscroff = 1; 
-
 struct cpufreq_suspend_t {
 	struct mutex suspend_mutex;
 	int device_suspended;
 };
 
 static DEFINE_PER_CPU(struct cpufreq_suspend_t, cpufreq_suspend);
-
-/**maxscroff**/
-static int __init cpufreq_read_arg_maxscroff(char *max_so)
-{
-	if (strcmp(max_so, "0") == 0) {
-		maxscroff = 0;
-	} else if (strcmp(max_so, "1") == 0) {
-		maxscroff = 1;
-	} else {
-		maxscroff = 0;
-	}
-	return 1;
-}
-
-__setup("max_so=", cpufreq_read_arg_maxscroff);
-/**end maxscroff**/ 
 
 struct cpu_freq {
 	uint32_t max;
@@ -119,12 +98,10 @@ static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq)
 
 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
-	trace_cpu_frequency_switch_start(freqs.old, freqs.new, policy->cpu);
 	ret = acpuclk_set_rate(policy->cpu, new_freq, SETRATE_CPUFREQ);
-	if (!ret) {
-		trace_cpu_frequency_switch_end(policy->cpu);
+	if (!ret)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
-	}
+
 	/* Restore priority after clock ramp-up */
 	if (freqs.new > freqs.old && saved_sched_policy >= 0) {
 		param.sched_priority = saved_sched_rt_prio;
@@ -260,15 +237,15 @@ int msm_cpufreq_set_freq_limits(uint32_t cpu, uint32_t min, uint32_t max)
 	else
 		limit->allowed_max = limit->max;
 
-	//pr_debug("%s: Limiting cpu %d min = %d, max = %d\n",
-	//		__func__, cpu,
-	//		limit->allowed_min, limit->allowed_max);
+	pr_debug("%s: Limiting cpu %d min = %d, max = %d\n",
+			__func__, cpu,
+			limit->allowed_min, limit->allowed_max);
 
 	return 0;
 }
 EXPORT_SYMBOL(msm_cpufreq_set_freq_limits);
 
-static int msm_cpufreq_init(struct cpufreq_policy *policy)
+static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int cur_freq;
 	int index;
@@ -330,7 +307,7 @@ static int msm_cpufreq_init(struct cpufreq_policy *policy)
 	return 0;
 }
 
-static int msm_cpufreq_cpu_callback(struct notifier_block *nfb,
+static int __cpuinit msm_cpufreq_cpu_callback(struct notifier_block *nfb,
 		unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
@@ -387,57 +364,8 @@ static int msm_cpufreq_resume(struct cpufreq_policy *policy)
 	return 0;
 }
 
-/** maxscreen off sysfs interface **/
-
-static ssize_t show_max_screen_off_khz(struct cpufreq_policy *policy, char *buf)
-{
-	return sprintf(buf, "%u\n", maxscroff_freq);
-}
-
-static ssize_t store_max_screen_off_khz(struct cpufreq_policy *policy,
-		const char *buf, size_t count)
-{
-	unsigned int freq = 0;
-	int ret;
-	int index;
-	struct cpufreq_frequency_table *freq_table = cpufreq_frequency_get_table(policy->cpu);
-
-	if (!freq_table)
-		return -EINVAL;
-
-	ret = sscanf(buf, "%u", &freq);
-	if (ret != 1)
-		return -EINVAL;
-
-	mutex_lock(&per_cpu(cpufreq_suspend, policy->cpu).suspend_mutex);
-
-	ret = cpufreq_frequency_table_target(policy, freq_table, freq,
-			CPUFREQ_RELATION_H, &index);
-	if (ret)
-		goto out;
-
-	maxscroff_freq = freq_table[index].frequency;
-
-	ret = count;
-
-out:
-	mutex_unlock(&per_cpu(cpufreq_suspend, policy->cpu).suspend_mutex);
-	return ret;
-}
-
-struct freq_attr msm_cpufreq_attr_max_screen_off_khz = {
-	.attr = { .name = "screen_off_max_freq",
-		.mode = 0644,
-	},
-	.show = show_max_screen_off_khz,
-	.store = store_max_screen_off_khz,
-};
-
-/** end maxscreen off sysfs interface **/
-
 static struct freq_attr *msm_freq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
-	&msm_cpufreq_attr_max_screen_off_khz, 
 	NULL,
 };
 
@@ -469,4 +397,4 @@ static int __init msm_cpufreq_register(void)
 	return cpufreq_register_driver(&msm_cpufreq_driver);
 }
 
-device_initcall(msm_cpufreq_register);
+late_initcall(msm_cpufreq_register);

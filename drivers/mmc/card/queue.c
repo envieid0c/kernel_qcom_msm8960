@@ -15,7 +15,7 @@
 #include <linux/freezer.h>
 #include <linux/kthread.h>
 #include <linux/scatterlist.h>
-#include <linux/sched.h>
+
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include <linux/sched.h>
@@ -61,10 +61,10 @@ static int mmc_queue_thread(void *d)
 	struct request_queue *q = mq->queue;
 	struct mmc_card *card = mq->card;
 
-        struct sched_param scheduler_params = {0};
-        scheduler_params.sched_priority = 1;
+	struct sched_param scheduler_params = {0};
+	scheduler_params.sched_priority = 1;
 
-        sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	current->flags |= PF_MEMALLOC;
 

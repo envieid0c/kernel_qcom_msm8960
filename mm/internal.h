@@ -12,9 +12,6 @@
 #define __MM_INTERNAL_H
 
 #include <linux/mm.h>
-#ifdef CONFIG_ZSWAP
-#include <linux/rmap.h>
-#endif
 
 void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
 		unsigned long floor, unsigned long ceiling);
@@ -94,7 +91,6 @@ extern unsigned long highest_memmap_pfn;
 extern int isolate_lru_page(struct page *page);
 extern void putback_lru_page(struct page *page);
 extern unsigned long zone_reclaimable_pages(struct zone *zone);
-extern bool zone_reclaimable(struct zone *zone);
 
 /*
  * in mm/page_alloc.c
@@ -125,24 +121,17 @@ struct compact_control {
 	unsigned long free_pfn;		/* isolate_freepages search base */
 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
 	bool sync;			/* Synchronous migration */
-	bool ignore_skip_hint;		/* Scan blocks even if marked skip */
-	bool finished_update_free;	/* True when the zone cached pfns are
-					 * no longer being updated
-					 */
-	bool finished_update_migrate;
 
 	int order;			/* order a direct compactor needs */
 	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
 	struct zone *zone;
-	bool contended;		/* True if a lock was contended */
 };
 
 unsigned long
-isolate_freepages_range(struct compact_control *cc,
-			unsigned long start_pfn, unsigned long end_pfn);
+isolate_freepages_range(unsigned long start_pfn, unsigned long end_pfn);
 unsigned long
 isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-		unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
+			   unsigned long low_pfn, unsigned long end_pfn);
 
 #endif
 
@@ -372,49 +361,3 @@ extern void set_pageblock_order(void);
 
 #endif	/* __MM_INTERNAL_H */
 
-/*
- * Unnecessary readahead harms performance, especially for SSD devices, where
- * large reads are significantly more expensive than small ones.
- * These implements simple swap random access detection. In swap page fault: if
- * the page is found in swapcache, decrease a counter in the vma, otherwise we
- * need to perform sync swapin and the counter is increased.  Optionally swapin
- * will perform readahead if the counter is below a threshold.
- */
-#ifdef CONFIG_ZSWAP
-#define SWAPRA_MISS_THRESHOLD  (100)
-#define SWAPRA_MAX_MISS ((SWAPRA_MISS_THRESHOLD) * 10)
-static inline void swap_cache_hit(struct vm_area_struct *vma)
-{
-	if (vma && vma->anon_vma)
-		atomic_dec_if_positive(&vma->anon_vma->swapra_miss);
-}
-
-static inline void swap_cache_miss(struct vm_area_struct *vma)
-{
-	if (!vma || !vma->anon_vma)
-		return;
-	if (atomic_read(&vma->anon_vma->swapra_miss) < SWAPRA_MAX_MISS)
-		atomic_inc(&vma->anon_vma->swapra_miss);
-}
-
-static inline int swap_cache_skip_readahead(struct vm_area_struct *vma)
-{
-	if (!vma || !vma->anon_vma)
-		return 0;
-	return atomic_read(&vma->anon_vma->swapra_miss) >
-		SWAPRA_MISS_THRESHOLD;
-}
-#else
-static inline void swap_cache_hit(struct vm_area_struct *vma)
-{
-}
-
-static inline void swap_cache_miss(struct vm_area_struct *vma)
-{
-}
-
-static inline int swap_cache_skip_readahead(struct vm_area_struct *vma)
-{
-	return 0;
-}
-#endif	/* CONFIG_ZSWAP */

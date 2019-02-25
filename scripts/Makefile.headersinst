@@ -15,7 +15,7 @@ _dst := $(if $(dst),$(dst),$(obj))
 gen := $(if $(gen),$(gen),$(subst include/,include/generated/,$(obj)))
 
 kbuild-file := $(srctree)/$(obj)/Kbuild
-#include $(kbuild-file)
+include $(kbuild-file)
 
 _dst := $(if $(destination-y),$(destination-y),$(_dst))
 

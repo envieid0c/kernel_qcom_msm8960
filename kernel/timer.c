@@ -814,9 +814,11 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
 	if (mask == 0)
 		return expires;
 
-	bit = __fls(mask);
+	bit = find_last_bit(&mask, BITS_PER_LONG);
 
-	expires_limit = (expires_limit >> bit) << bit;
+	mask = (1UL << bit) - 1;
+
+	expires_limit = expires_limit & ~(mask);
 
 	return expires_limit;
 }
@@ -1105,9 +1107,7 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
 	 * warnings as well as problems when looking into
 	 * timer->lockdep_map, make a copy and use that here.
 	 */
-	struct lockdep_map lockdep_map;
-
-	lockdep_copy_map(&lockdep_map, &timer->lockdep_map);
+	struct lockdep_map lockdep_map = timer->lockdep_map;
 #endif
 	/*
 	 * Couple the lock chain with the lock chain at
@@ -1647,11 +1647,11 @@ SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
 	return 0;
 }
 
-static int init_timers_cpu(int cpu)
+static int __cpuinit init_timers_cpu(int cpu)
 {
 	int j;
 	struct tvec_base *base;
-	static char tvec_base_done[NR_CPUS];
+	static char __cpuinitdata tvec_base_done[NR_CPUS];
 
 	if (!tvec_base_done[cpu]) {
 		static char boot_done;
@@ -1720,7 +1720,7 @@ static void migrate_timer_list(struct tvec_base *new_base, struct list_head *hea
 	}
 }
 
-static void migrate_timers(int cpu)
+static void __cpuinit migrate_timers(int cpu)
 {
 	struct tvec_base *old_base;
 	struct tvec_base *new_base;
@@ -1753,7 +1753,7 @@ static void migrate_timers(int cpu)
 }
 #endif /* CONFIG_HOTPLUG_CPU */
 
-static int timer_cpu_notify(struct notifier_block *self,
+static int __cpuinit timer_cpu_notify(struct notifier_block *self,
 				unsigned long action, void *hcpu)
 {
 	long cpu = (long)hcpu;
@@ -1778,7 +1778,7 @@ static int timer_cpu_notify(struct notifier_block *self,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block timers_nb = {
+static struct notifier_block __cpuinitdata timers_nb = {
 	.notifier_call	= timer_cpu_notify,
 };
 
@@ -1823,52 +1823,6 @@ unsigned long msleep_interruptible(unsigned int msecs)
 }
 
 EXPORT_SYMBOL(msleep_interruptible);
-
-static void do_nsleep(unsigned int msecs, struct hrtimer_sleeper *sleeper,
-	int sigs)
-{
-	enum hrtimer_mode mode = HRTIMER_MODE_REL;
-	int state = sigs ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE;
-
-	hrtimer_init(&sleeper->timer, CLOCK_MONOTONIC, mode);
-	sleeper->timer.node.expires = ktime_set(msecs / 1000,
-						(msecs % 1000) * NSEC_PER_MSEC);
-	hrtimer_init_sleeper(sleeper, current);
-
-	do {
-		set_current_state(state);
-		hrtimer_start(&sleeper->timer, sleeper->timer.node.expires, mode);
-		if (sleeper->task)
-			schedule();
-		hrtimer_cancel(&sleeper->timer);
-		mode = HRTIMER_MODE_ABS;
-	} while (sleeper->task && !(sigs && signal_pending(current)));
-}
-
-void hr_msleep(unsigned int msecs)
-{
-	struct hrtimer_sleeper sleeper;
-
-	do_nsleep(msecs, &sleeper, 0);
-}
-
-EXPORT_SYMBOL(hr_msleep);
-
-unsigned long hr_msleep_interruptible(unsigned int msecs)
-{
-	struct hrtimer_sleeper sleeper;
-	ktime_t left;
-
-	do_nsleep(msecs, &sleeper, 1);
-
-	if (!sleeper.task)
-		return 0;
-	left = ktime_sub(sleeper.timer.node.expires,
-				sleeper.timer.base->get_time());
-	return max(((long) ktime_to_ns(left))/(long)NSEC_PER_MSEC, 1L);
-}
-
-EXPORT_SYMBOL(hr_msleep_interruptible);
 
 static int __sched do_usleep_range(unsigned long min, unsigned long max)
 {

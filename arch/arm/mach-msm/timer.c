@@ -23,11 +23,11 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/percpu.h>
-#include <linux/sched_clock.h>
 
 #include <asm/localtimer.h>
 #include <asm/mach/time.h>
 #include <asm/hardware/gic.h>
+#include <asm/sched_clock.h>
 #include <asm/smp_plat.h>
 #include <mach/msm_iomap.h>
 #include <mach/irqs.h>
@@ -953,7 +953,7 @@ static void __init msm_sched_clock_init(void)
 }
 
 #ifdef CONFIG_LOCAL_TIMERS
-int local_timer_setup(struct clock_event_device *evt)
+int __cpuinit local_timer_setup(struct clock_event_device *evt)
 {
 	static DEFINE_PER_CPU(bool, first_boot) = true;
 	struct msm_clock *clock = &msm_clocks[msm_global_timer];

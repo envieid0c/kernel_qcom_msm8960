@@ -26,6 +26,12 @@
 
 static spinlock_t cpufreq_stats_lock;
 
+#define CPUFREQ_STATDEVICE_ATTR(_name, _mode, _show) \
+static struct freq_attr _attr_##_name = {\
+	.attr = {.name = __stringify(_name), .mode = _mode, }, \
+	.show = _show,\
+};
+
 struct cpufreq_stats {
 	unsigned int cpu;
 	unsigned int total_trans;
@@ -212,17 +218,17 @@ static ssize_t show_trans_table(struct cpufreq_policy *policy, char *buf)
 		return PAGE_SIZE;
 	return len;
 }
-cpufreq_freq_attr_ro(trans_table);
+CPUFREQ_STATDEVICE_ATTR(trans_table, 0444, show_trans_table);
 #endif
 
-cpufreq_freq_attr_ro(total_trans);
-cpufreq_freq_attr_ro(time_in_state);
+CPUFREQ_STATDEVICE_ATTR(total_trans, 0444, show_total_trans);
+CPUFREQ_STATDEVICE_ATTR(time_in_state, 0444, show_time_in_state);
 
 static struct attribute *default_attrs[] = {
-	&total_trans.attr,
-	&time_in_state.attr,
+	&_attr_total_trans.attr,
+	&_attr_time_in_state.attr,
 #ifdef CONFIG_CPU_FREQ_STAT_DETAILS
-	&trans_table.attr,
+	&_attr_trans_table.attr,
 #endif
 	NULL
 };
@@ -262,10 +268,6 @@ static void cpufreq_stats_free_table(unsigned int cpu)
 static void cpufreq_stats_free_sysfs(unsigned int cpu)
 {
 	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
-
-	if (!cpufreq_frequency_get_table(cpu))
-		return;
-
 	if (policy && policy->cpu == cpu)
 		sysfs_remove_group(&policy->kobj, &stats_attr_group);
 	if (policy)
@@ -274,19 +276,19 @@ static void cpufreq_stats_free_sysfs(unsigned int cpu)
 
 static void cpufreq_allstats_free(void)
 {
-	int cpu;
+	int i;
 	struct all_cpufreq_stats *all_stat;
 
 	sysfs_remove_file(cpufreq_global_kobject,
 						&_attr_all_time_in_state.attr);
 
-	for_each_possible_cpu(cpu) {
-		all_stat = per_cpu(all_cpufreq_stats, cpu);
+	for (i = 0; i < total_cpus; i++) {
+		all_stat = per_cpu(all_cpufreq_stats, i);
 		if (!all_stat)
 			continue;
 		kfree(all_stat->time_in_state);
 		kfree(all_stat);
-		per_cpu(all_cpufreq_stats, cpu) = NULL;
+		per_cpu(all_cpufreq_stats, i) = NULL;
 	}
 	if (all_freq_table) {
 		kfree(all_freq_table->freq_table);
@@ -372,7 +374,11 @@ static int compare_for_sort(const void *lhs_ptr, const void *rhs_ptr)
 {
 	unsigned int lhs = *(const unsigned int *)(lhs_ptr);
 	unsigned int rhs = *(const unsigned int *)(rhs_ptr);
-	return (lhs - rhs);
+	if (lhs < rhs)
+		return -1;
+	if (lhs > rhs)
+		return 1;
+	return 0;
 }
 
 static bool check_all_freq_table(unsigned int freq)
@@ -546,7 +552,7 @@ out:
 	return ret;
 }
 
-static int cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
 					       unsigned long action,
 					       void *hcpu)
 {

@@ -457,8 +457,8 @@ int kgsl_context_init(struct kgsl_device_private *dev_priv,
 		}
 
 		write_lock(&device->context_lock);
-		/* Allocate the slot but don't put a pointer in it yet */
-		ret = idr_get_new_above(&device->context_idr, NULL, 1, &id);
+		ret = idr_get_new_above(&device->context_idr, context, 1, &id);
+		context->id = id;
 		write_unlock(&device->context_lock);
 
 		if (ret != -EAGAIN)
@@ -476,8 +476,6 @@ int kgsl_context_init(struct kgsl_device_private *dev_priv,
 		ret = -ENOSPC;
 		goto fail_free_id;
 	}
-
-	context->id = id;
 
 	kref_init(&context->refcount);
 	/*
@@ -1085,7 +1083,7 @@ int kgsl_open_device(struct kgsl_device *device)
 		if (result)
 			goto err;
 
-		result = device->ftbl->start(device, 0);
+		result = device->ftbl->start(device);
 		if (result)
 			goto err;
 		/*
@@ -2331,13 +2329,7 @@ static long kgsl_ioctl_drawctxt_create(struct kgsl_device_private *dev_priv,
 		goto done;
 	}
 	trace_kgsl_context_create(dev_priv->device, context, param->flags);
-
-	/* Commit the pointer to the context in context_idr */
-	write_lock(&device->context_lock);
-	idr_replace(&device->context_idr, context, context->id);
 	param->drawctxt_id = context->id;
-	write_unlock(&device->context_lock);
-
 done:
 	return result;
 }
@@ -3128,9 +3120,6 @@ kgsl_ioctl_sharedmem_flush_cache(struct kgsl_device_private *dev_priv,
 	return ret;
 }
 
-/* The largest allowable alignment for a GPU object is 32MB */
-#define KGSL_MAX_ALIGN (32 * SZ_1M)
-
 /*
  * The common parts of kgsl_ioctl_gpumem_alloc and kgsl_ioctl_gpumem_alloc_id.
  */
@@ -3157,13 +3146,11 @@ _gpumem_alloc(struct kgsl_device_private *dev_priv,
 	/* Cap the alignment bits to the highest number we can handle */
 
 	align = (flags & KGSL_MEMALIGN_MASK) >> KGSL_MEMALIGN_SHIFT;
-	if (align >= ilog2(KGSL_MAX_ALIGN)) {
-		KGSL_CORE_ERR("Alignment too large; restricting to %dK\n",
-			KGSL_MAX_ALIGN >> 10);
+	if (align >= 32) {
+		KGSL_CORE_ERR("Alignment too big, restricting to 2^31\n");
 
 		flags &= ~KGSL_MEMALIGN_MASK;
-		flags |= (ilog2(KGSL_MAX_ALIGN) << KGSL_MEMALIGN_SHIFT) &
-			KGSL_MEMALIGN_MASK;
+		flags |= (31 << KGSL_MEMALIGN_SHIFT) & KGSL_MEMALIGN_MASK;
 	}
 
 	entry = kgsl_mem_entry_create();
@@ -4146,8 +4133,9 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
 	disable_irq(device->pwrctrl.interrupt_num);
 
 	KGSL_DRV_INFO(device,
-		"dev_id %d regs phys 0x%08lx size 0x%08x\n",
-		device->id, device->reg_phys, device->reg_len);
+		"dev_id %d regs phys 0x%08lx size 0x%08x virt %p\n",
+		device->id, device->reg_phys, device->reg_len,
+		device->reg_virt);
 
 	rwlock_init(&device->context_lock);
 
@@ -4238,7 +4226,7 @@ int kgsl_postmortem_dump(struct kgsl_device *device, int manual)
 	del_timer_sync(&device->idle_timer);
 
 	/* Force on the clocks */
-	kgsl_pwrctrl_wake(device, 0);
+	kgsl_pwrctrl_wake(device);
 
 	/* Disable the irq */
 	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_OFF);
@@ -4329,7 +4317,7 @@ static void kgsl_core_exit(void)
 static int __init kgsl_core_init(void)
 {
 	int result = 0;
-	struct sched_param param = { .sched_priority = 6 };
+	struct sched_param param = { .sched_priority = 2 };
 
 	/* alloc major and minor device numbers */
 	result = alloc_chrdev_region(&kgsl_driver.major, 0, KGSL_DEVICE_MAX,
@@ -4410,8 +4398,6 @@ static int __init kgsl_core_init(void)
 
 	if (kgsl_memfree_hist_init())
 		KGSL_CORE_ERR("failed to init memfree_hist");
-
-	kgsl_heap_init();
 
 	return 0;
 

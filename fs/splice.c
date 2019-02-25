@@ -379,9 +379,6 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
 		index++;
 	}
 
-	if (unlikely(!(in->f_mode & FMODE_SPLICE_READ)))
-		return -EINVAL;
-
 	/*
 	 * Now loop over the map and see if we need to start IO on any
 	 * pages, fill in the partial map, etc.
@@ -1039,14 +1036,17 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
 		ret = sd.num_spliced;
 
 	if (ret > 0) {
+		unsigned long nr_pages;
 		int err;
+
+		nr_pages = (ret + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
 
 		err = generic_write_sync(out, *ppos, ret);
 		if (err)
 			ret = err;
 		else
 			*ppos += ret;
-		balance_dirty_pages_ratelimited(mapping);
+		balance_dirty_pages_ratelimited_nr(mapping, nr_pages);
 	}
 
 	return ret;
@@ -1072,9 +1072,6 @@ static ssize_t default_file_splice_write(struct pipe_inode_info *pipe,
 					 size_t len, unsigned int flags)
 {
 	ssize_t ret;
-
-	if (unlikely(!(out->f_mode & FMODE_SPLICE_WRITE)))
-		return -EINVAL;
 
 	ret = splice_from_pipe(pipe, out, ppos, len, flags, write_pipe_buf);
 	if (ret > 0)

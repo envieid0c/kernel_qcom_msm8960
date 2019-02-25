@@ -1791,7 +1791,6 @@ retry:
 err_unlock_inode:
 	ext3_journal_stop(handle);
 	unlock_new_inode(inode);
-	iput(inode);
 	return err;
 }
 

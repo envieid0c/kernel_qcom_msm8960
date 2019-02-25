@@ -410,7 +410,7 @@
 		regulator-name = "krait0";
 		reg = <0xf9088000 0x1000>;
 		regulator-min-microvolt = <500000>;
-		regulator-max-microvolt = <1200000>;
+		regulator-max-microvolt = <1100000>;
 	};
 
 	krait1_vreg: regulator@f9098000 {
@@ -418,7 +418,7 @@
 		regulator-name = "krait1";
 		reg = <0xf9098000 0x1000>;
 		regulator-min-microvolt = <500000>;
-		regulator-max-microvolt = <1200000>;
+		regulator-max-microvolt = <1100000>;
 	};
 
 	krait2_vreg: regulator@f90a8000 {
@@ -426,7 +426,7 @@
 		regulator-name = "krait2";
 		reg = <0xf90a8000 0x1000>;
 		regulator-min-microvolt = <500000>;
-		regulator-max-microvolt = <1200000>;
+		regulator-max-microvolt = <1100000>;
 	};
 
 	krait3_vreg: regulator@f90b8000 {
@@ -434,6 +434,6 @@
 		regulator-name = "krait3";
 		reg = <0xf90b8000 0x1000>;
 		regulator-min-microvolt = <500000>;
-		regulator-max-microvolt = <1200000>;
+		regulator-max-microvolt = <1100000>;
 	};
 };

@@ -1009,8 +1009,8 @@ out:
 
 const struct inode_operations v9fs_dir_inode_operations_dotl = {
 	.create = v9fs_vfs_create_dotl,
-	.lookup = v9fs_vfs_lookup,
 	.atomic_open = v9fs_vfs_atomic_open_dotl,
+	.lookup = v9fs_vfs_lookup,
 	.link = v9fs_vfs_link_dotl,
 	.symlink = v9fs_vfs_symlink_dotl,
 	.unlink = v9fs_vfs_unlink,

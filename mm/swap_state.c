@@ -14,15 +14,11 @@
 #include <linux/init.h>
 #include <linux/pagemap.h>
 #include <linux/backing-dev.h>
-#include <linux/blkdev.h>
 #include <linux/pagevec.h>
 #include <linux/migrate.h>
 #include <linux/page_cgroup.h>
 
 #include <asm/pgtable.h>
-#ifdef CONFIG_ZSWAP
-#include "internal.h"
-#endif
 
 /*
  * swapper_space is a fiction, retained to simplify the path through
@@ -62,8 +58,7 @@ void show_swap_cache_info(void)
 	printk("Swap cache stats: add %lu, delete %lu, find %lu/%lu\n",
 		swap_cache_info.add_total, swap_cache_info.del_total,
 		swap_cache_info.find_success, swap_cache_info.find_total);
-	printk("Free swap  = %ldkB\n",
-		get_nr_swap_pages() << (PAGE_SHIFT - 10));
+	printk("Free swap  = %ldkB\n", nr_swap_pages << (PAGE_SHIFT - 10));
 	printk("Total swap = %lukB\n", total_swap_pages << (PAGE_SHIFT - 10));
 }
 
@@ -71,11 +66,7 @@ void show_swap_cache_info(void)
  * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
  * but sets SwapCache flag and private instead of mapping and index.
  */
-#ifdef CONFIG_ZSWAP
-int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-#else
 static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
-#endif
 {
 	int error;
 
@@ -401,13 +392,6 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 	unsigned long offset = swp_offset(entry);
 	unsigned long start_offset, end_offset;
 	unsigned long mask = (1UL << page_cluster) - 1;
-	struct blk_plug plug;
-
-#ifdef CONFIG_ZSWAP
-	swap_cache_miss(vma);
-	if (swap_cache_skip_readahead(vma))
-		goto skip;
-#endif
 
 	/* Read a page_cluster sized and aligned cluster around offset. */
 	start_offset = offset & ~mask;
@@ -415,7 +399,6 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 	if (!start_offset)	/* First page is swap header. */
 		start_offset++;
 
-	blk_start_plug(&plug);
 	for (offset = start_offset; offset <= end_offset ; offset++) {
 		/* Ok, do the async read-ahead now */
 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
@@ -424,11 +407,6 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 			continue;
 		page_cache_release(page);
 	}
-	blk_finish_plug(&plug);
-
 	lru_add_drain();	/* Push any new pages onto the LRU now */
-#ifdef CONFIG_ZSWAP
-skip:
-#endif
 	return read_swap_cache_async(entry, gfp_mask, vma, addr);
 }

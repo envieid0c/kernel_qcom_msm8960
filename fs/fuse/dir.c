@@ -527,8 +527,8 @@ static int fuse_atomic_open(struct inode *dir, struct dentry *entry,
 		if (IS_ERR(res))
 			return PTR_ERR(res);
 
-	if (res)
-		entry = res;
+		if (res)
+			entry = res;
 	}
 
 	if (!(flags & O_CREAT) || entry->d_inode)

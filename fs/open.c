@@ -661,19 +661,19 @@ int open_check_o_direct(struct file *f)
 {
 	/* NB: we're sure to have correct a_ops only after f_op->open */
 	if (f->f_flags & O_DIRECT) {
-	    if (!f->f_mapping->a_ops ||
-	        ((!f->f_mapping->a_ops->direct_IO) &&
-	        (!f->f_mapping->a_ops->get_xip_mem))) {
-		    return -EINVAL;
+		if (!f->f_mapping->a_ops ||
+		    ((!f->f_mapping->a_ops->direct_IO) &&
+		    (!f->f_mapping->a_ops->get_xip_mem))) {
+			return -EINVAL;
+		}
 	}
-    }
-    return 0;
+	return 0;
 }
 
 static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-		   struct file *f,
-		   int (*open)(struct inode *, struct file *),
-		   const struct cred *cred)
+				   struct file *f,
+				   int (*open)(struct inode *, struct file *),
+				   const struct cred *cred)
 {
 	static const struct file_operations empty_fops = {};
 	struct inode *inode;
@@ -703,10 +703,6 @@ static struct file *do_dentry_open(struct dentry *dentry, struct vfsmount *mnt,
 		f->f_op = &empty_fops;
 		return f;
 	}
-
-	if (S_ISREG(inode->i_mode))
-		f->f_mode |= FMODE_SPLICE_WRITE | FMODE_SPLICE_READ;
-
 
 	f->f_op = fops_get(inode->i_fop);
 
@@ -758,21 +754,21 @@ cleanup_file:
 }
 
 static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
-		struct file *f,
-		int (*open)(struct inode *, struct file *),
-		const struct cred *cred)
+				struct file *f,
+				int (*open)(struct inode *, struct file *),
+				const struct cred *cred)
 {
-    struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
-    if (!IS_ERR(res)) {
-	int error = open_check_o_direct(f);
-	if (error) {
-	    fput(res);
-	    res = ERR_PTR(error);
+	struct file *res = do_dentry_open(dentry, mnt, f, open, cred);
+	if (!IS_ERR(res)) {
+		int error = open_check_o_direct(f);
+		if (error) {
+			fput(res);
+			res = ERR_PTR(error);
+		}
+	} else {
+		put_filp(f);
 	}
-    } else {
-	put_filp(f);
-    }
-    return res;
+	return res;
 }
 
 /**
@@ -801,6 +797,7 @@ int finish_open(struct file *file, struct dentry *dentry,
 		int *opened)
 {
 	struct file *res;
+	BUG_ON(*opened & FILE_OPENED); /* once it's opened, it's opened */
 
 	mntget(file->f_path.mnt);
 	dget(dentry);
@@ -810,6 +807,7 @@ int finish_open(struct file *file, struct dentry *dentry,
 		*opened |= FILE_OPENED;
 		return 0;
 	}
+
 	return PTR_ERR(res);
 }
 EXPORT_SYMBOL(finish_open);
@@ -987,9 +985,9 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
  */
 struct file *file_open_name(struct filename *name, int flags, umode_t mode)
 {
-    struct open_flags op;
-    int lookup = build_open_flags(flags, mode, &op);
-    return do_filp_open(AT_FDCWD, name, &op, lookup);
+	struct open_flags op;
+	int lookup = build_open_flags(flags, mode, &op);
+	return do_filp_open(AT_FDCWD, name, &op, lookup);
 }
 
 /**
@@ -1111,6 +1109,7 @@ int filp_close(struct file *filp, fl_owner_t id)
 		dnotify_flush(filp, id);
 		locks_remove_posix(filp, id);
 	}
+	security_file_close(filp);
 	fput(filp);
 	return retval;
 }

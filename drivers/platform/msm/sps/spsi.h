@@ -49,17 +49,26 @@ extern u8 debug_level_option;
 extern u8 print_limit_option;
 
 #define MAX_MSG_LEN 80
+#define SPS_DEBUGFS(msg, args...) do {					\
+		char buf[MAX_MSG_LEN];		\
+		snprintf(buf, MAX_MSG_LEN, msg"\n", ##args);	\
+		sps_debugfs_record(buf);	\
+	} while (0)
 #define SPS_ERR(msg, args...) do {					\
 		if (unlikely(print_limit_option > 2))	\
 			pr_err_ratelimited(msg, ##args);	\
 		else	\
 			pr_err(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #define SPS_INFO(msg, args...) do {					\
 		if (unlikely(print_limit_option > 1))	\
 			pr_info_ratelimited(msg, ##args);	\
 		else	\
 			pr_info(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #define SPS_DBG(msg, args...) do {					\
 		if ((unlikely(logging_option > 1))	\
@@ -70,6 +79,8 @@ extern u8 print_limit_option;
 				pr_info(msg, ##args);	\
 		} else	\
 			pr_debug(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #define SPS_DBG1(msg, args...) do {					\
 		if ((unlikely(logging_option > 1))	\
@@ -80,6 +91,8 @@ extern u8 print_limit_option;
 				pr_info(msg, ##args);	\
 		} else	\
 			pr_debug(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #define SPS_DBG2(msg, args...) do {					\
 		if ((unlikely(logging_option > 1))	\
@@ -90,6 +103,8 @@ extern u8 print_limit_option;
 				pr_info(msg, ##args);	\
 		} else	\
 			pr_debug(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #define SPS_DBG3(msg, args...) do {					\
 		if ((unlikely(logging_option > 1))	\
@@ -100,6 +115,8 @@ extern u8 print_limit_option;
 				pr_info(msg, ##args);	\
 		} else	\
 			pr_debug(msg, ##args);	\
+		if (unlikely(debugfs_record_enabled))	\
+			SPS_DEBUGFS(msg, ##args);	\
 	} while (0)
 #else
 #define	SPS_DBG3(x...)		pr_debug(x)

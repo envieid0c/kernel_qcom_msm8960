@@ -55,9 +55,6 @@ extern void kernel_restart(char *cmd);
  */
 #define MMC_BKOPS_MAX_TIMEOUT	(30 * 1000) /* max time to wait in ms */
 
-/* Flushing a large amount of cached data may take a long time. */
-#define MMC_FLUSH_REQ_TIMEOUT_MS 90000 /* msec */
-#define MMC_CACHE_DISBALE_TIMEOUT_MS 180000 /* msec */
 static struct workqueue_struct *workqueue;
 
 /*
@@ -65,8 +62,8 @@ static struct workqueue_struct *workqueue;
  * performance cost, and for other reasons may not always be desired.
  * So we allow it it to be disabled.
  */
-bool use_spi_crc = 0;
-module_param(use_spi_crc, bool, 0644);
+bool use_spi_crc = 1;
+module_param(use_spi_crc, bool, 0);
 
 /*
  * We normally treat cards as removed during suspend if they are not
@@ -380,12 +377,11 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
 
 		if (!card->ext_csd.raw_bkops_status)
 			goto out;
-		/*
+
 		pr_info("%s: %s: raw_bkops_status=0x%x, from_exception=%d\n",
 			mmc_hostname(card->host), __func__,
 			card->ext_csd.raw_bkops_status,
 			from_exception);
-		*/
 	}
 
 	/*
@@ -399,7 +395,7 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
 		mmc_card_set_need_bkops(card);
 		goto out;
 	}
-	//pr_info("%s: %s: Starting bkops\n", mmc_hostname(card->host), __func__);
+	pr_info("%s: %s: Starting bkops\n", mmc_hostname(card->host), __func__);
 
 	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 			EXT_CSD_BKOPS_START, 1, 0, false, false);
@@ -2680,6 +2676,44 @@ int mmc_flush_cache(struct mmc_card *card)
 	return err;
 }
 EXPORT_SYMBOL(mmc_flush_cache);
+
+/*
+ * Turn the cache ON/OFF.
+ * Turning the cache OFF shall trigger flushing of the data
+ * to the non-volatile storage.
+ * This function should be called with host claimed
+ */
+int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
+{
+	struct mmc_card *card = host->card;
+	unsigned int timeout;
+	int err = 0;
+
+	if (!(host->caps2 & MMC_CAP2_CACHE_CTRL) ||
+			mmc_card_is_removable(host))
+		return err;
+
+	if (card && mmc_card_mmc(card) &&
+			(card->ext_csd.cache_size > 0)) {
+		enable = !!enable;
+
+		if (card->ext_csd.cache_ctrl ^ enable) {
+			timeout = enable ? card->ext_csd.generic_cmd6_time : 0;
+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+					EXT_CSD_CACHE_CTRL, enable, timeout);
+			if (err)
+				pr_err("%s: cache %s error %d\n",
+						mmc_hostname(card->host),
+						enable ? "on" : "off",
+						err);
+			else
+				card->ext_csd.cache_ctrl = enable;
+		}
+	}
+
+	return err;
+}
+EXPORT_SYMBOL(mmc_cache_ctrl);
 
 #ifdef CONFIG_PM
 

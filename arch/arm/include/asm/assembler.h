@@ -57,10 +57,8 @@
  */
 #if __LINUX_ARM_ARCH__ >= 5
 #define PLD(code...)	code
-#define NO_PLD(code...)
 #else
 #define PLD(code...)
-#define NO_PLD(code...) code
 #endif
 
 /*
@@ -320,14 +318,6 @@
 \name:
 	.asciz "\string"
 	.size \name , . - \name
-	.endm
-
-	.macro	csdb
-#ifdef CONFIG_THUMB2_KERNEL
-	.inst.w	0xf3af8014
-#else
-	.inst	0xe320f014
-#endif
 	.endm
 
 	.macro check_uaccess, addr:req, size:req, limit:req, tmp:req, bad:req

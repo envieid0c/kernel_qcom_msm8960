@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2009, 2012-2014, The Linux Foundation.
+/* Copyright (c) 2008-2009, 2012-2013, The Linux Foundation.
  * All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -173,13 +173,10 @@ int diag_hdlc_decode(struct diag_hdlc_decode_type *hdlc)
 	uint8_t src_byte;
 
 	int pkt_bnd = 0;
-	int msg_start;
 
 	if (hdlc && hdlc->src_ptr && hdlc->dest_ptr &&
 	    (hdlc->src_size > hdlc->src_idx) &&
 	    (hdlc->dest_size > hdlc->dest_idx)) {
-
-		msg_start = (hdlc->src_idx == 0) ? 1 : 0;
 
 		src_ptr = hdlc->src_ptr;
 		src_ptr = &src_ptr[hdlc->src_idx];
@@ -207,16 +204,8 @@ int diag_hdlc_decode(struct diag_hdlc_decode_type *hdlc)
 				}
 			} else if (src_byte == CONTROL_CHAR) {
 				dest_ptr[len++] = src_byte;
-				/*
-				 * If this is the first byte in the message,
-				 * then it is part of the command. Otherwise,
-				 * consider it as the last byte of the
-				 * message.
-				 */
-				if (msg_start && i == 0 && src_length > 1)
-					continue;
-				i++;
 				pkt_bnd = 1;
+				i++;
 				break;
 			} else {
 				dest_ptr[len++] = src_byte;

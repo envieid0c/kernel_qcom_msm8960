@@ -49,11 +49,10 @@
 static int __read_mostly sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
 static bool __read_mostly sysrq_always_enabled;
 
-bool sysrq_on(void)
+static bool sysrq_on(void)
 {
 	return sysrq_enabled || sysrq_always_enabled;
 }
-EXPORT_SYMBOL(sysrq_on);
 
 /*
  * A value of 1 means 'all', other nonzero values are an op mask:

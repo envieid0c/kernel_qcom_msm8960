@@ -739,6 +739,7 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	p9_client_clunk(fid);
 
 	return 0;
+}
 
 /**
  * v9fs_vfs_mkdir - VFS mkdir hook to create a directory
@@ -783,7 +784,7 @@ static int v9fs_vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
  */
 
 struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
-				    unsigned int flags)
+				      unsigned int flags)
 {
 	struct dentry *res;
 	struct super_block *sb;
@@ -794,7 +795,7 @@ struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
 	int result = 0;
 
 	p9_debug(P9_DEBUG_VFS, "dir: %p dentry: (%s) %p flags: %x\n",
-		dir, dentry->d_name.name, dentry, flags);
+		 dir, dentry->d_name.name, dentry, flags);
 
 	if (dentry->d_name.len > NAME_MAX)
 		return ERR_PTR(-ENAMETOOLONG);
@@ -884,7 +885,7 @@ v9fs_vfs_atomic_open(struct inode *dir, struct dentry *dentry,
 	v9ses = v9fs_inode2v9ses(dir);
 	perm = unixmode2p9mode(v9ses, mode);
 	fid = v9fs_create(v9ses, dir, dentry, NULL, perm,
-			v9fs_uflags2omode(flags,
+				v9fs_uflags2omode(flags,
 						v9fs_proto_dotu(v9ses)));
 	if (IS_ERR(fid)) {
 		err = PTR_ERR(fid);
@@ -931,7 +932,6 @@ out:
 error:
 	if (fid)
 		p9_client_clunk(fid);
-
 	goto out;
 }
 

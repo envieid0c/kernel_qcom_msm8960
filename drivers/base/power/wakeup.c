@@ -16,18 +16,8 @@
 #include <linux/debugfs.h>
 #include <linux/types.h>
 #include <trace/events/power.h>
-#include <linux/moduleparam.h>
 
 #include "power.h"
-
-static bool enable_si_ws = true;
-module_param(enable_si_ws, bool, 0644);
-static bool enable_wlan_rx_wake_ws = true;
-module_param(enable_wlan_rx_wake_ws, bool, 0644);
-static bool enable_wlan_ctrl_wake_ws = true;
-module_param(enable_wlan_ctrl_wake_ws, bool, 0644);
-static bool enable_wlan_wake_ws = true;
-module_param(enable_wlan_wake_ws, bool, 0644);
 
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
@@ -354,16 +344,10 @@ int device_init_wakeup(struct device *dev, bool enable)
 {
 	int ret = 0;
 
-	if (!dev)
-		return -EINVAL;
-
 	if (enable) {
 		device_set_wakeup_capable(dev, true);
 		ret = device_wakeup_enable(dev);
 	} else {
-		if (dev->power.can_wakeup)
-			device_wakeup_disable(dev);
-
 		device_set_wakeup_capable(dev, false);
 	}
 
@@ -423,24 +407,6 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
 static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
-
-	if (!enable_si_ws && !strcmp(ws->name, "sensor_ind"))
-		return;
-
-	if (!enable_wlan_rx_wake_ws && !strcmp(ws->name, "wlan_rx_wake"))
-		return;
-
-	if (!enable_wlan_ctrl_wake_ws && !strcmp(ws->name, "wlan_ctrl_wake"))
-		return;
-
-	if (!enable_wlan_wake_ws && !strcmp(ws->name, "wlan_wake"))
-		return;
-
-	/*
-	 * active wakeup source should bring the system
-	 * out of PM_SUSPEND_FREEZE state
-	 */
-	freeze_wake();
 
 	ws->active = true;
 	ws->active_count++;
@@ -721,7 +687,7 @@ void pm_get_active_wakeup_sources(char *pending_wakeup_source, size_t max)
 
 	rcu_read_lock();
 	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-		if (ws->active && len < max) {
+		if (ws->active) {
 			if (!active)
 				len += scnprintf(pending_wakeup_source, max,
 						"Pending Wakeup Sources: ");
@@ -792,10 +758,8 @@ bool pm_wakeup_pending(void)
 	}
 	spin_unlock_irqrestore(&events_lock, flags);
 
-	if (ret) {
-		pr_info("PM: Wakeup pending, aborting suspend\n");
+	if (ret)
 		print_active_wakeup_sources();
-	}
 
 	return ret;
 }

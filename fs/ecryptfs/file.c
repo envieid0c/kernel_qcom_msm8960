@@ -36,21 +36,22 @@
 /**
  * ecryptfs_read_update_atime
  *
- * generic_file_read_iter updates the atime of upper layer inode.  But, it
+ * generic_file_read updates the atime of upper layer inode.  But, it
  * doesn't give us a chance to update the atime of the lower layer
- * inode.  This function is a wrapper to generic_file_read_iter.  It
- * updates the atime of the lower level inode if generic_file_read_iter
+ * inode.  This function is a wrapper to generic_file_read.  It
+ * updates the atime of the lower level inode if generic_file_read
  * returns without any errors. This is to be used only for file reads.
  * The function to be used for directory reads is ecryptfs_read.
  */
 static ssize_t ecryptfs_read_update_atime(struct kiocb *iocb,
-				struct iov_iter *iter, loff_t pos)
+				const struct iovec *iov,
+				unsigned long nr_segs, loff_t pos)
 {
 	ssize_t rc;
 	struct path lower;
 	struct file *file = iocb->ki_filp;
 
-	rc = generic_file_read_iter(iocb, iter, pos);
+	rc = generic_file_aio_read(iocb, iov, nr_segs, pos);
 	/*
 	 * Even though this is a async interface, we need to wait
 	 * for IO to finish to update atime
@@ -145,15 +146,6 @@ static int read_or_initialize_metadata(struct dentry *dentry)
 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat;
 	struct ecryptfs_crypt_stat *crypt_stat;
 	int rc;
-	struct file *lower_file = ecryptfs_file_to_lower(file);
-
-	/*
-	 * Don't allow mmap on top of file systems that don't support it
-	 * natively.  If FILESYSTEM_MAX_STACK_DEPTH > 2 or ecryptfs
-	 * allows recursive mounting, this will need to be extended.
-	 */
-	if (!lower_file->f_op->mmap)
-		return -ENODEV;
 
 	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
 	mount_crypt_stat = &ecryptfs_superblock_to_private(
@@ -379,9 +371,9 @@ const struct file_operations ecryptfs_dir_fops = {
 const struct file_operations ecryptfs_main_fops = {
 	.llseek = generic_file_llseek,
 	.read = do_sync_read,
-	.read_iter = ecryptfs_read_update_atime,
+	.aio_read = ecryptfs_read_update_atime,
 	.write = do_sync_write,
-	.write_iter = generic_file_write_iter,
+	.aio_write = generic_file_aio_write,
 	.readdir = ecryptfs_readdir,
 	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
 #ifdef CONFIG_COMPAT

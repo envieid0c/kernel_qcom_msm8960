@@ -14,59 +14,25 @@
 #ifndef __MSM_THERMAL_H
 #define __MSM_THERMAL_H
 
-#include <asm/cputime.h>
-
 struct msm_thermal_data {
-    uint32_t sensor_id;
-    uint32_t poll_ms;
-#ifdef CONFIG_INTELLI_THERMAL
-    int32_t limit_temp_degC;
-    int32_t temp_hysteresis_degC;
-    uint32_t freq_step;
-    uint32_t freq_control_mask;
-    int32_t core_limit_temp_degC;
-    int32_t core_temp_hysteresis_degC;
-    uint32_t core_control_mask;
-#else
-    uint32_t limit_temp_degC;
-    uint32_t temp_hysteresis_degC;
-    uint32_t freq_step;
-#endif
-    uint32_t shutdown_temp;
-
-    uint32_t allowed_max_high;
-    uint32_t allowed_max_low;
-    uint32_t allowed_max_freq;
-
-    uint32_t allowed_mid_high;
-    uint32_t allowed_mid_low;
-    uint32_t allowed_mid_freq;
-
-    uint32_t allowed_low_high;
-    uint32_t allowed_low_low;
-    uint32_t allowed_low_freq;
+	uint32_t sensor_id;
+	uint32_t poll_ms;
+	uint32_t limit_temp_degC;
+	uint32_t temp_hysteresis_degC;
+	uint32_t freq_step;
 };
 
-struct msm_thermal_stat {
-    cputime64_t time_low_start;
-    cputime64_t time_mid_start;
-    cputime64_t time_max_start;
-    cputime64_t time_low;
-    cputime64_t time_mid;
-    cputime64_t time_max;
-};
-
-#if defined(CONFIG_THERMAL_MONITOR) || defined(CONFIG_INTELLI_THERMAL)
+#ifdef CONFIG_THERMAL_MONITOR
 extern int msm_thermal_init(struct msm_thermal_data *pdata);
 extern int msm_thermal_device_init(void);
 #else
 static inline int msm_thermal_init(struct msm_thermal_data *pdata)
 {
-    return -ENOSYS;
+	return -ENOSYS;
 }
 static inline int msm_thermal_device_init(void)
 {
-    return -ENOSYS;
+	return -ENOSYS;
 }
 #endif
 

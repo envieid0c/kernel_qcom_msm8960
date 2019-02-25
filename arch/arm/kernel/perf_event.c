@@ -337,23 +337,15 @@ out:
 }
 
 static int
-validate_event(struct pmu *pmu, struct pmu_hw_events *hw_events,
-			       struct perf_event *event)
+validate_event(struct pmu_hw_events *hw_events,
+	       struct perf_event *event)
 {
-	struct arm_pmu *armpmu;
+	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
 	struct hw_perf_event fake_event = event->hw;
 	struct pmu *leader_pmu = event->group_leader->pmu;
 
 	if (is_software_event(event))
 		return 1;
-
-	/*
-	 * Reject groups spanning multiple HW PMUs (e.g. CPU + CCI). The
-	 * core perf code won't check that the pmu->ctx == leader->ctx
-	 * until after pmu->event_init(event).
-	 */
-	if (event->pmu != pmu)
-		return 0;
 
 	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
 		return 1;
@@ -361,7 +353,6 @@ validate_event(struct pmu *pmu, struct pmu_hw_events *hw_events,
 	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
 		return 1;
 
-	armpmu = to_arm_pmu(event->pmu);
 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 }
 
@@ -379,15 +370,15 @@ validate_group(struct perf_event *event)
 	memset(fake_used_mask, 0, sizeof(fake_used_mask));
 	fake_pmu.used_mask = fake_used_mask;
 
-	if (!validate_event(event->pmu, &fake_pmu, leader))
+	if (!validate_event(&fake_pmu, leader))
 		return -EINVAL;
 
 	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
-		if (!validate_event(event->pmu, &fake_pmu, sibling))
+		if (!validate_event(&fake_pmu, sibling))
 			return -EINVAL;
 	}
 
-	if (!validate_event(event->pmu, &fake_pmu, event))
+	if (!validate_event(&fake_pmu, event))
 		return -EINVAL;
 
 	return 0;
@@ -805,7 +796,7 @@ void disable_irq_callback(void *info)
  * UNKNOWN at reset, the PMU must be explicitly reset to avoid reading
  * junk values out of them.
  */
-static int pmu_cpu_notify(struct notifier_block *b,
+static int __cpuinit pmu_cpu_notify(struct notifier_block *b,
 					unsigned long action, void *hcpu)
 {
 	int irq;
@@ -866,7 +857,7 @@ static void armpmu_update_counters(void)
 	}
 }
 
-static struct notifier_block pmu_cpu_notifier = {
+static struct notifier_block __cpuinitdata pmu_cpu_notifier = {
 	.notifier_call = pmu_cpu_notify,
 };
 
@@ -874,13 +865,11 @@ static struct notifier_block pmu_cpu_notifier = {
 static int perf_cpu_pm_notifier(struct notifier_block *self, unsigned long cmd,
 		void *v)
 {
-	struct pmu *pmu;
 	switch (cmd) {
 	case CPU_PM_ENTER:
 		if (cpu_has_active_perf()) {
 			armpmu_update_counters();
-			pmu = &cpu_pmu->pmu;
-			pmu->pmu_disable(pmu);
+			perf_pmu_disable(&cpu_pmu->pmu);
 		}
 		break;
 
@@ -893,8 +882,7 @@ static int perf_cpu_pm_notifier(struct notifier_block *self, unsigned long cmd,
 			 */
 			__get_cpu_var(from_idle) = 1;
 			cpu_pmu->reset(NULL);
-			pmu = &cpu_pmu->pmu;
-			pmu->pmu_enable(pmu);
+			perf_pmu_enable(&cpu_pmu->pmu);
 		}
 		break;
 	}

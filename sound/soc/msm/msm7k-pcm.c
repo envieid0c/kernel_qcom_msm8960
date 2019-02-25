@@ -451,6 +451,7 @@ static int msm_pcm_open(struct snd_pcm_substream *substream)
  out:
 	kfree(prtd);
 	runtime->private_data = NULL;
+
 	return ret;
 }
 

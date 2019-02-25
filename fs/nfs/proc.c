@@ -296,7 +296,7 @@ out:
 	dprintk("NFS reply mknod: %d\n", status);
 	return status;
 }
-
+  
 static int
 nfs_proc_remove(struct inode *dir, struct qstr *name)
 {

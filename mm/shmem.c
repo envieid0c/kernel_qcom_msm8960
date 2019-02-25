@@ -823,9 +823,7 @@ static struct page *shmem_swapin(swp_entry_t swap, gfp_t gfp,
 	pvma.vm_pgoff = index;
 	pvma.vm_ops = NULL;
 	pvma.vm_policy = mpol_shared_policy_lookup(&info->policy, index);
-#ifdef CONFIG_ZSWAP
-	pvma.anon_vma = NULL;
-#endif
+
 	page = swapin_readahead(swap, gfp, &pvma, 0);
 
 	/* Drop reference taken by mpol_shared_policy_lookup() */
@@ -1662,15 +1660,15 @@ shmem_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 			}
 		}
 #ifdef CONFIG_TMPFS_POSIX_ACL
-	error = generic_acl_init(inode, dir);
-	if (error) {
-		iput(inode);
-		return error;
-	}
+		error = generic_acl_init(inode, dir);
+		if (error) {
+			iput(inode);
+			return error;
+		}
 #else
-	error = 0;
+		error = 0;
 #endif
-	d_tmpfile(dentry, inode);
+		d_tmpfile(dentry, inode);
 	}
 	return error;
 }

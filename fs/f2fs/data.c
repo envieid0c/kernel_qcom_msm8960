@@ -1723,7 +1723,7 @@ static int f2fs_write_end(struct file *file,
 }
 
 static ssize_t check_direct_IO(struct inode *inode, int rw,
-		struct iov_iter *iter, loff_t offset)
+		const struct iovec *iov, loff_t offset, unsigned long nr_segs)
 {
 	unsigned blocksize_mask = inode->i_sb->s_blocksize - 1;
 	int seg, i;
@@ -1736,58 +1736,42 @@ static ssize_t check_direct_IO(struct inode *inode, int rw,
 		return -EINVAL;
 
 	/* Check the memory alignment.  Blocks cannot straddle pages */
-	if (iov_iter_has_iovec(iter)) {
-		const struct iovec *iov = iov_iter_iovec(iter);
+	for (seg = 0; seg < nr_segs; seg++) {
+		addr = (unsigned long)iov[seg].iov_base;
+		size = iov[seg].iov_len;
+		end += size;
+		if ((addr & blocksize_mask) || (size & blocksize_mask))
+			goto out;
 
-		for (seg = 0; seg < iter->nr_segs; seg++) {
-			addr = (unsigned long)iov[seg].iov_base;
-				size = iov[seg].iov_len;
-			end += size;
-			if ((addr & blocksize_mask) || (size & blocksize_mask))
-				goto out;
+		/* If this is a write we don't need to check anymore */
+		if (rw & WRITE)
+			continue;
 
-			/* If this is a write we don't need to check anymore */
-			if (rw & WRITE)
-				continue;
-
-			/*
-			 * Check to make sure we don't have duplicate iov_base's
-			 * in this iovec, if so return EINVAL, otherwise we'll
-			 */
-			for (i = seg + 1; i < iter->nr_segs; i++) {
-				if (iov[seg].iov_base == iov[i].iov_base)
-						goto out;
-			}
-		}
-	} else if (iov_iter_has_bvec(iter)) {
-		struct bio_vec *bvec = iov_iter_bvec(iter);
-
-		for (seg = 0; seg < iter->nr_segs; seg++) {
-			addr = (unsigned long)bvec[seg].bv_offset;
-			size = bvec[seg].bv_len;
-			end += size;
-			if ((addr & blocksize_mask) || (size & blocksize_mask))
+		/*
+		 * Check to make sure we don't have duplicate iov_base's in this
+		 * iovec, if so return EINVAL, otherwise we'll get csum errors
+		 * when reading back.
+		 */
+		for (i = seg + 1; i < nr_segs; i++) {
+			if (iov[seg].iov_base == iov[i].iov_base)
 				goto out;
 		}
-	} else
-	    BUG();
-
+	}
 	retval = 0;
 out:
 	return retval;
 }
 
 static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
-				struct iov_iter *iter, loff_t offset)
+				const struct iovec *iov, loff_t offset,
+				unsigned long nr_segs)
 {
 	struct address_space *mapping = iocb->ki_filp->f_mapping;
 	struct inode *inode = mapping->host;
-//	size_t count = iov_length(iov, nr_segs);
-	size_t count = iov_iter_count(iter);
+	size_t count = iov_length(iov, nr_segs);
 	int err;
 
-//	err = check_direct_IO(inode, rw, iov, offset, nr_segs);
-	err = check_direct_IO(inode, rw, iter, offset);
+	err = check_direct_IO(inode, rw, iov, offset, nr_segs);
 	if (err)
 		return err;
 
@@ -1796,9 +1780,7 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb,
 
 	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
 
-//	err = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
-//							get_data_block_dio);
-	err = blockdev_direct_IO(rw, iocb, inode, iter, offset,
+	err = blockdev_direct_IO(rw, iocb, inode, iov, offset, nr_segs,
 							get_data_block_dio);
 	if (err < 0 && (rw & WRITE)) {
 		if (err > 0)

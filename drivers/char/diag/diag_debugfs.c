@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -29,12 +29,14 @@ static ssize_t diag_dbgfs_read_status(struct file *file, char __user *ubuf,
 {
 	char *buf;
 	int ret;
+
 	unsigned int buf_size;
 	buf = kzalloc(sizeof(char) * DEBUG_BUF_SIZE, GFP_KERNEL);
 	if (!buf) {
 		pr_err("diag: %s, Error allocating memory\n", __func__);
 		return -ENOMEM;
 	}
+
 	buf_size = ksize(buf);
 	ret = scnprintf(buf, buf_size,
 		"modem ch: 0x%x\n"
@@ -174,21 +176,17 @@ static ssize_t diag_dbgfs_read_table(struct file *file, char __user *ubuf,
 	unsigned int bytes_remaining;
 	unsigned int bytes_in_buffer = 0;
 	unsigned int bytes_written;
-	unsigned int buf_size;
-	buf_size = (DEBUG_BUF_SIZE < count) ? DEBUG_BUF_SIZE : count;
+	unsigned int buf_size = (DEBUG_BUF_SIZE < count) ? DEBUG_BUF_SIZE : count;
 
-	mutex_lock(&driver->cmd_reg_mutex);
 	if (diag_dbgfs_table_index >= diag_max_reg) {
 		/* Done. Reset to prepare for future requests */
 		diag_dbgfs_table_index = 0;
-		mutex_unlock(&driver->cmd_reg_mutex);
 		return 0;
 	}
 
 	buf = kzalloc(sizeof(char) * buf_size, GFP_KERNEL);
-	if (ZERO_OR_NULL_PTR(buf)) {
+	if (!buf) {
 		pr_err("diag: %s, Error allocating memory\n", __func__);
-		mutex_unlock(&driver->cmd_reg_mutex);
 		return -ENOMEM;
 	}
 	buf_size = ksize(buf);
@@ -228,7 +226,6 @@ static ssize_t diag_dbgfs_read_table(struct file *file, char __user *ubuf,
 			break;
 	}
 	diag_dbgfs_table_index = i+1;
-	mutex_unlock(&driver->cmd_reg_mutex);
 
 	*ppos = 0;
 	ret = simple_read_from_buffer(ubuf, count, ppos, buf, bytes_in_buffer);
@@ -247,11 +244,9 @@ static ssize_t diag_dbgfs_read_bridge(struct file *file, char __user *ubuf,
 	unsigned int bytes_remaining;
 	unsigned int bytes_in_buffer = 0;
 	unsigned int bytes_written;
-	unsigned int buf_size;
+	unsigned int buf_size = (DEBUG_BUF_SIZE < count) ? DEBUG_BUF_SIZE : count;
 	int bytes_hsic_inited = 45;
 	int bytes_hsic_not_inited = 410;
-
-	buf_size = (DEBUG_BUF_SIZE < count) ? DEBUG_BUF_SIZE : count;
 
 	if (diag_dbgfs_finished) {
 		diag_dbgfs_finished = 0;
@@ -259,7 +254,7 @@ static ssize_t diag_dbgfs_read_bridge(struct file *file, char __user *ubuf,
 	}
 
 	buf = kzalloc(sizeof(char) * buf_size, GFP_KERNEL);
-	if (ZERO_OR_NULL_PTR(buf)) {
+	if (!buf) {
 		pr_err("diag: %s, Error allocating memory\n", __func__);
 		return -ENOMEM;
 	}

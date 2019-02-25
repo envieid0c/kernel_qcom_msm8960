@@ -598,7 +598,7 @@ success:
  * - NOTE! the hit can be a negative hit too, so we can't assume we have an
  *   inode
  */
-static int afs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
+static int afs_d_revalidate(struct dentry *dentry, unsigned int flags)
 {
 	struct afs_vnode *vnode, *dir;
 	struct afs_fid uninitialized_var(fid);

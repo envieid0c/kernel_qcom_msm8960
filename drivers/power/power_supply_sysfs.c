@@ -181,9 +181,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(serial_number),
-	POWER_SUPPLY_ATTR(current_qnovo),
-	POWER_SUPPLY_ATTR(voltage_qnovo),
-	POWER_SUPPLY_ATTR(charge_qnovo_enable),
 };
 
 static struct attribute *

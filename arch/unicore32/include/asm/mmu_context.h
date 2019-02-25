@@ -16,9 +16,6 @@
 #include <linux/sched.h>
 #include <linux/io.h>
 
-#include <linux/mm.h>
-#include <linux/vmacache.h>
-
 #include <asm/cacheflush.h>
 #include <asm/cpu-single.h>
 
@@ -76,7 +73,7 @@ do { \
 		else \
 			mm->mmap = NULL; \
 		rb_erase(&high_vma->vm_rb, &mm->mm_rb); \
-		vmacache_invalidate(mm); \
+		mm->mmap_cache = NULL; \
 		mm->map_count--; \
 		remove_vma(high_vma); \
 	} \
