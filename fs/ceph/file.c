@@ -215,8 +215,8 @@ out:
  * ceph_release gets called).  So fear not!
  */
 int ceph_lookup_open(struct inode *dir, struct dentry *dentry,
-		    struct file *file, unsigned flags, umode_t mode,
-		    int *opened)
+		     struct file *file, unsigned flags, umode_t mode,
+		     int *opened)
 {
 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
 	struct ceph_mds_client *mdsc = fsc->mdsc;

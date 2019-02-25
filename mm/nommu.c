@@ -15,7 +15,6 @@
 
 #include <linux/export.h>
 #include <linux/mm.h>
-#include <linux/vmacache.h>
 #include <linux/mman.h>
 #include <linux/swap.h>
 #include <linux/file.h>
@@ -750,20 +749,14 @@ static void delete_vma_from_mm(struct vm_area_struct *vma)
 {
 	struct address_space *mapping;
 	struct mm_struct *mm = vma->vm_mm;
-	struct task_struct *curr = current;
 
 	kenter("%p", vma);
 
 	protect_vma(vma, 0);
 
 	mm->map_count--;
-	for (i = 0; i < VMACACHE_SIZE; i++) {
-		/* if the vma is cached, invalidate the entire cache */
-		if (curr->vmacache[i] == vma) {
-			vmacache_invalidate(curr->mm);
-			break;
-		}
-	}
+	if (mm->mmap_cache == vma)
+		mm->mmap_cache = NULL;
 
 	/* remove the VMA from the mapping */
 	if (vma->vm_file) {
@@ -814,9 +807,8 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 	struct vm_area_struct *vma;
 
 	/* check the cache first */
-	vma = ACCESS_ONCE(vmacache_find(mm, addr));
-//	vma = vmacache_find(mm, addr);
-	if (likely(vma))
+	vma = ACCESS_ONCE(mm->mmap_cache);
+	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
 		return vma;
 
 	/* trawl the list (there may be multiple mappings in which addr
@@ -825,7 +817,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
 		if (vma->vm_start > addr)
 			return NULL;
 		if (vma->vm_end > addr) {
-			vmacache_update(addr, vma);
+			mm->mmap_cache = vma;
 			return vma;
 		}
 	}
@@ -864,8 +856,8 @@ static struct vm_area_struct *find_vma_exact(struct mm_struct *mm,
 	unsigned long end = addr + len;
 
 	/* check the cache first */
-	vma = vmacache_find_exact(mm, addr, end);
-	if (vma)
+	vma = mm->mmap_cache;
+	if (vma && vma->vm_start == addr && vma->vm_end == end)
 		return vma;
 
 	/* trawl the list (there may be multiple mappings in which addr
@@ -876,7 +868,7 @@ static struct vm_area_struct *find_vma_exact(struct mm_struct *mm,
 		if (vma->vm_start > addr)
 			return NULL;
 		if (vma->vm_end == end) {
-			vmacache_update(addr, vma);
+			mm->mmap_cache = vma;
 			return vma;
 		}
 	}
@@ -1946,7 +1938,7 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
 		 */
 		free -= global_page_state(NR_SHMEM);
 
-		free += get_nr_swap_pages();
+		free += nr_swap_pages;
 
 		/*
 		 * Any slabs which are created with the

@@ -155,6 +155,7 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	u32 ystride, bpp, data;
 	u32 dummy_xres, dummy_yres;
 	int target_type = 0;
+	int old_nice;
 
 	pr_debug("%s+:\n", __func__);
 
@@ -163,6 +164,14 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	var = &fbi->var;
 	pinfo = &mfd->panel_info;
 	esc_byte_ratio = pinfo->mipi.esc_byte_ratio;
+	/*
+	 * Now first priority is to turn on LCD quickly for better
+	 * user experience. We set current task to higher priority
+	 * and restore it after panel is on.
+	 */
+	old_nice = task_nice(current);
+	if (old_nice > -20)
+		set_user_nice(current, -20);
 
 	if (mipi_dsi_pdata && mipi_dsi_pdata->dsi_power_save)
 		mipi_dsi_pdata->dsi_power_save(1);
@@ -330,6 +339,10 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	else
 		up(&mfd->dma->mutex);
 
+	/* Restore current priority */
+	if (old_nice > -20)
+		set_user_nice(current, old_nice);
+
 	pr_debug("%s-:\n", __func__);
 
 	return ret;
@@ -410,7 +423,7 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 			periph_base = ioremap(MMSS_SERDES_BASE_PHY, 0x100);
 
 			if (periph_base) {
-				pr_debug("periph_base %pK\n", periph_base);
+				pr_debug("periph_base %p\n", periph_base);
 				writel(0x4, periph_base + 0x28);
 				writel(0xc, periph_base + 0x28);
 			} else {

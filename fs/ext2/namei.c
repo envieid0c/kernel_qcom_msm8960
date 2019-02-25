@@ -121,25 +121,25 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
 
 static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
-    struct inode *inode = ext2_new_inode(dir, mode, NULL);
-    if (IS_ERR(inode))
-	return PTR_ERR(inode);
+	struct inode *inode = ext2_new_inode(dir, mode, NULL);
+	if (IS_ERR(inode))
+		return PTR_ERR(inode);
 
-    inode->i_op = &ext2_file_inode_operations;
-    if (ext2_use_xip(inode->i_sb)) {
-	inode->i_mapping->a_ops = &ext2_aops_xip;
-	inode->i_fop = &ext2_xip_file_operations;
-    } else if (test_opt(inode->i_sb, NOBH)) {
-	inode->i_mapping->a_ops = &ext2_nobh_aops;
-	inode->i_fop = &ext2_file_operations;
-    } else {
-	inode->i_mapping->a_ops = &ext2_aops;
-	inode->i_fop = &ext2_file_operations;
-    }
-    mark_inode_dirty(inode);
-    d_tmpfile(dentry, inode);
-    unlock_new_inode(inode);
-    return 0;
+	inode->i_op = &ext2_file_inode_operations;
+	if (ext2_use_xip(inode->i_sb)) {
+		inode->i_mapping->a_ops = &ext2_aops_xip;
+		inode->i_fop = &ext2_xip_file_operations;
+	} else if (test_opt(inode->i_sb, NOBH)) {
+		inode->i_mapping->a_ops = &ext2_nobh_aops;
+		inode->i_fop = &ext2_file_operations;
+	} else {
+		inode->i_mapping->a_ops = &ext2_aops;
+		inode->i_fop = &ext2_file_operations;
+	}
+	mark_inode_dirty(inode);
+	d_tmpfile(dentry, inode);
+	unlock_new_inode(inode);
+	return 0;
 }
 
 static int ext2_mknod (struct inode * dir, struct dentry *dentry, umode_t mode, dev_t rdev)

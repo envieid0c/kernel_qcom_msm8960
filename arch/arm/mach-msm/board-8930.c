@@ -2294,23 +2294,8 @@ static struct msm_thermal_data msm_thermal_pdata = {
 	.sensor_id = 9,
 	.poll_ms = 250,
 	.limit_temp_degC = 60,
-#ifdef CONFIG_CPU_OVERCLOCK
-	.limit_temp_degC = 70,
-#else
-	.limit_temp_degC = 60,
-#endif
 	.temp_hysteresis_degC = 10,
 	.freq_step = 2,
-#ifdef CONFIG_INTELLI_THERMAL
-	.freq_control_mask = 0xf,
-#ifdef CONFIG_CPU_OVERCLOCK
-	.core_limit_temp_degC = 85,
-#else
-	.core_limit_temp_degC = 70,
-#endif
-	.core_temp_hysteresis_degC = 10,
-	.core_control_mask = 0xe,
-#endif
 };
 
 #ifdef CONFIG_MSM_FAKE_BATTERY
@@ -2478,7 +2463,6 @@ static struct platform_device *common_devices[] __initdata = {
 	&msm_tsens_device,
 	&msm8930_cache_dump_device,
 	&msm8930_pc_cntr,
-	&msm8930_cpu_slp_status,
 };
 
 static struct platform_device *cdp_devices[] __initdata = {

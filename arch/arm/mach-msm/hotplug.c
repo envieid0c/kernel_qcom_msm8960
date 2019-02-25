@@ -24,7 +24,13 @@
 
 extern volatile int pen_release;
 
-static DEFINE_PER_CPU(unsigned int, warm_boot_flag);
+struct msm_hotplug_device {
+	struct completion cpu_killed;
+	unsigned int warm_boot;
+};
+
+static DEFINE_PER_CPU_SHARED_ALIGNED(struct msm_hotplug_device,
+			msm_hotplug_devices);
 
 static inline void cpu_enter_lowpower(void)
 {
@@ -81,6 +87,7 @@ void platform_cpu_die(unsigned int cpu)
 			__func__, smp_processor_id(), cpu);
 		BUG();
 	}
+	complete(&__get_cpu_var(msm_hotplug_devices).cpu_killed);
 	/*
 	 * we're ready for shutdown now, so do it
 	 */
@@ -145,10 +152,11 @@ static struct notifier_block hotplug_rtb_notifier = {
 int msm_platform_secondary_init(unsigned int cpu)
 {
 	int ret;
-	unsigned int *warm_boot = &__get_cpu_var(warm_boot_flag);
+	struct msm_hotplug_device *dev = &__get_cpu_var(msm_hotplug_devices);
 
-	if (!(*warm_boot)) {
-		*warm_boot = 1;
+	if (!dev->warm_boot) {
+		dev->warm_boot = 1;
+		init_completion(&dev->cpu_killed);
 		return 0;
 	}
 	msm_jtag_restore_state();
@@ -163,6 +171,8 @@ int msm_platform_secondary_init(unsigned int cpu)
 static int __init init_hotplug(void)
 {
 
+	struct msm_hotplug_device *dev = &__get_cpu_var(msm_hotplug_devices);
+	init_completion(&dev->cpu_killed);
 	return register_hotcpu_notifier(&hotplug_rtb_notifier);
 }
 early_initcall(init_hotplug);

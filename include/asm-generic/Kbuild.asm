@@ -27,7 +27,6 @@ header-y += param.h
 header-y += poll.h
 header-y += posix_types.h
 header-y += ptrace.h
-header-y += qrng.h
 header-y += resource.h
 header-y += sembuf.h
 header-y += setup.h

@@ -78,7 +78,7 @@
  *   dentry1->d_lock
  *     dentry2->d_lock
  */
-int sysctl_vfs_cache_pressure __read_mostly = 40;
+int sysctl_vfs_cache_pressure __read_mostly = 100;
 EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
 
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
@@ -108,7 +108,8 @@ static inline struct hlist_bl_head *d_hash(const struct dentry *parent,
 					unsigned int hash)
 {
 	hash += (unsigned long) parent / L1_CACHE_BYTES;
-	return dentry_hashtable + hash_32(hash, d_hash_shift);
+	hash = hash + (hash >> D_HASHBITS);
+	return dentry_hashtable + (hash & D_HASHMASK);
 }
 
 /* Statistics gathering. */
@@ -210,7 +211,7 @@ static inline int dentry_cmp(const struct dentry *dentry, const unsigned char *c
 	 */
 	cs = ACCESS_ONCE(dentry->d_name.name);
 	smp_read_barrier_depends();
-	return dentry_string_cmp(cs, ct, tcount);;
+	return dentry_string_cmp(cs, ct, tcount);
 }
 
 static void __d_free(struct rcu_head *head)
@@ -1515,7 +1516,6 @@ static struct dentry *__d_instantiate_unique(struct dentry *entry,
 	}
 
 	list_for_each_entry(alias, &inode->i_dentry, d_u.d_alias) {
-
 		/*
 		 * Don't need alias->d_lock here, because aliases with
 		 * d_parent == entry->d_parent are not subject to name or
@@ -1825,11 +1825,11 @@ enum slow_d_compare {
 };
 
 static noinline enum slow_d_compare slow_dentry_cmp(
-	const struct dentry *parent,
-	struct inode *inode,
-	struct dentry *dentry,
-	unsigned int seq,
-	const struct qstr *name)
+		const struct dentry *parent,
+		struct inode *inode,
+		struct dentry *dentry,
+		unsigned int seq,
+		const struct qstr *name)
 {
 	int tlen = dentry->d_name.len;
 	const char *tname = dentry->d_name.name;
@@ -1840,8 +1840,8 @@ static noinline enum slow_d_compare slow_dentry_cmp(
 		return D_COMP_SEQRETRY;
 	}
 	if (parent->d_op->d_compare(parent, inode,
-			dentry, i,
-			tlen, tname, name))
+				dentry, i,
+				tlen, tname, name))
 		return D_COMP_NOMATCH;
 	return D_COMP_OK;
 }
@@ -1931,6 +1931,7 @@ seqretry:
 		if (d_unhashed(dentry))
 			continue;
 		*seqp = seq;
+
 		if (unlikely(parent->d_flags & DCACHE_OP_COMPARE)) {
 			if (dentry->d_name.hash != hashlen_hash(hashlen))
 				continue;
@@ -3123,17 +3124,17 @@ rename_retry:
 
 void d_tmpfile(struct dentry *dentry, struct inode *inode)
 {
-    inode_dec_link_count(inode);
-    BUG_ON(dentry->d_name.name != dentry->d_iname ||
-	!list_empty(&dentry->d_u.d_alias) ||
-	!d_unlinked(dentry));
-    spin_lock(&dentry->d_parent->d_lock);
-    spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-    dentry->d_name.len = sprintf(dentry->d_iname, "#%llu",
-		(unsigned long long)inode->i_ino);
-    spin_unlock(&dentry->d_lock);
-    spin_unlock(&dentry->d_parent->d_lock);
-    d_instantiate(dentry, inode);
+	inode_dec_link_count(inode);
+	BUG_ON(dentry->d_name.name != dentry->d_iname ||
+		!list_empty(&dentry->d_u.d_alias) ||
+		!d_unlinked(dentry));
+	spin_lock(&dentry->d_parent->d_lock);
+	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+	dentry->d_name.len = sprintf(dentry->d_iname, "#%llu",
+				(unsigned long long)inode->i_ino);
+	spin_unlock(&dentry->d_lock);
+	spin_unlock(&dentry->d_parent->d_lock);
+	d_instantiate(dentry, inode);
 }
 EXPORT_SYMBOL(d_tmpfile);
 

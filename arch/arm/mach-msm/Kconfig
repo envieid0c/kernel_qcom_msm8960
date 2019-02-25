@@ -37,9 +37,9 @@ config ARCH_MSM7X27
 	select QCACHE
 	select MSM_PM2 if PM
 	select MSM_RUN_QUEUE_STATS if MSM_SOC_REV_A
+	select DONT_MAP_HOLE_AFTER_MEMBANK0
 	select MIGHT_HAVE_CACHE_L2X0
 	select MSM_MODEM_RESTART
-	select ENABLE_VMALLOC_SAVINGS
 
 config ARCH_MSM7X30
 	bool "MSM7x30"
@@ -163,6 +163,7 @@ config ARCH_MSM8960
 	select MSM_SPM_V2
 	select MSM_L2_SPM
 	select MSM_NATIVE_RESTART
+	select DONT_MAP_HOLE_AFTER_MEMBANK0
 	select MSM_REMOTE_SPINLOCK_SFPB
 	select ARCH_SPARSEMEM_ENABLE
 	select ARCH_HAS_HOLES_MEMORYMODEL
@@ -177,8 +178,6 @@ config ARCH_MSM8960
 	select MSM_KRAIT_WFE_FIXUP
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
-	select HAS_MACH_MEMUTILS
-	select ENABLE_VMALLOC_SAVINGS
 
 config ARCH_MSM8930
 	bool "MSM8930"
@@ -201,6 +200,7 @@ config ARCH_MSM8930
 	select MSM_SPM_V2
 	select MSM_L2_SPM
 	select MSM_NATIVE_RESTART
+	select DONT_MAP_HOLE_AFTER_MEMBANK0
 	select MSM_REMOTE_SPINLOCK_SFPB
 	select ARCH_SPARSEMEM_ENABLE
 	select ARCH_HAS_HOLES_MEMORYMODEL
@@ -212,7 +212,6 @@ config ARCH_MSM8930
 	select MSM_KRAIT_WFE_FIXUP
 	select MSM_IOMMU_GPU_SYNC
 	select MSM_CPU_PWRCTL
-	select ENABLE_VMALLOC_SAVINGS
 
 config ARCH_APQ8064
 	bool "APQ8064"
@@ -913,6 +912,7 @@ config MACH_MSM_DUMMY
 endmenu
 
 source "arch/arm/mach-msm/lge/Kconfig"
+source "arch/arm/mach-msm/asustek/Kconfig"
 
 config MSM_STACKED_MEMORY
 	bool "Stacked Memory"
@@ -1299,6 +1299,20 @@ config MSM_PCIE
 	  Enables the PCIe functionality by configures PCIe core on
 	  MSM chipset and by enabling the ARM PCI framework extension.
 
+config MSM_RPC_SDIO_XPRT
+	depends on MSM_SDIO_AL
+	default y
+	bool "MSM SDIO XPRT Layer"
+	help
+	  SDIO Transport Layer for RPC Rouer
+
+config MSM_RPC_SDIO_DEBUG
+	depends on MSM_RPC_SDIO_XPRT
+	default y
+	bool "MSM SDIO XPRT debug support"
+	help
+	  Support for debugging SDIO XPRT
+
 config MSM_SMD_DEBUG
 	depends on MSM_SMD
 	default y
@@ -1306,6 +1320,21 @@ config MSM_SMD_DEBUG
 	help
 	  Support for debugging the SMD for communication
 	  between the ARM9 and ARM11
+
+config MSM_SDIO_AL
+	depends on ((ARCH_MSM7X30 || MACH_MSM8X60_FUSN_FFA || MACH_TYPE_MSM8X60_FUSION) && HAS_WAKELOCK)
+	default y
+	tristate "SDIO-Abstraction-Layer"
+	help
+	  Support MSM<->MDM Communication over SDIO bus.
+	  MDM SDIO-Client should have pipes support.
+
+config MSM_SDIO_DMUX
+	bool "SDIO Data Mux Driver"
+	depends on MSM_SDIO_AL
+	default n
+	help
+	  Support Muxed Data Channels over SDIO interface.
 
 config MSM_BAM_DMUX
 	bool "BAM Data Mux Driver"
@@ -1366,6 +1395,16 @@ config MSM_SMD_NMEA
 
 	  If in doubt, say yes.
 
+config MSM_SDIO_TTY
+	bool "SDIO TTY Driver"
+	depends on MSM_SDIO_AL
+	default n
+	help
+	  Provides a TTY driver SDIO TTY
+	  This driver can be used by user space
+	  applications for passing data through the
+	  SDIO interface.
+
 config MSM_HSIC_TTY
 	bool "HSIC TTY Driver"
 	default n
@@ -1402,6 +1441,13 @@ config MSM_SMD_PKT
 
 	  If in doubt, say yes.
 
+config MSM_SDIO_CMUX
+	bool "SDIO CMUX Driver"
+	depends on MSM_SDIO_AL
+	default n
+	help
+	  Provides a Muxed port interface over SDIO QMI
+
 config MSM_DSPS
 	bool "Sensors DSPS driver"
 	depends on (MSM_PIL && (ARCH_MSM8X60 || ARCH_MSM8960))
@@ -1413,6 +1459,13 @@ config MSM_DSPS
 	  themself.
 	  The number of clocks and their name may vary between targets.
 	  It also triggers the PIL to load the DSPS firmware.
+
+config MSM_SDIO_CTL
+	bool "SDIO CTL Driver"
+	depends on MSM_SDIO_CMUX
+	default n
+	help
+	  Provides a binary SDIO control port interface.
 
 config MSM_ONCRPCROUTER
 	depends on MSM_SMD
@@ -1531,6 +1584,15 @@ config MSM_RMT_STORAGE_CLIENT_STATS
 	  Collects performance statistics and shows this information
 	  through a debugfs file rmt_storage_stats.
 
+config MSM_SDIO_SMEM
+        depends on MSM_SDIO_AL
+        default n
+        bool "SDIO SMEM for remote storage"
+        help
+          Copies data from remote MDM9K memory to local MSM8x60
+	  memory. Used by remote storage client to shadow
+	  MDM9K filesystem.
+
 config MSM_DALRPC
 	bool "DAL RPC support"
 	default n
@@ -1564,124 +1626,6 @@ config MSM_CPU_FREQ_MIN
 	default 245760
 
 endif # CPU_FREQ_MSM
-
-config MSM_CPUFREQ_LIMITER
-	tristate "MSM CPU frequency limiter"
-	default n
-	help
-	  This driver limits MSM CPU frequency through sysfs file system.
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called cpufreq_stats.
-
-	  If in doubt, say N.
-
-config THUNDERPLUG_CONTROL
-	bool "Enable plugging down/up of cores based on load per core"
-	default n
-	help
-	  This driver hotplugs cpu cores based on per-core load
-
-config ZEN_DECISION
-	bool "Zen Decision MPDecision Replacement"
-	depends on SMP && FB
-	default n
-	help
-	  MPDecision is a userspace service that does several functions
-	  related to CPU Frequency and CPU Hotplugging. Some of these are:
-	  - Remove cores when screen goes off
-	  - Enable cores when screen goes on
-	  - Raise CPU_MIN_FREQ to a fixed value for a few seconds on input
-
-	  Zen Decision allows some of the MPDecison functions to be delegated
-	  to the kernel. Right now these are
-	  - Remove cores when screen goes off (after a configurable amount of time)
-	  - Enable cores when screen comes on (immediately)
-
-	  Zen Decision assumes the input boost function of MPDecision should be
-	  delegated to somewhere else in the kernel (Such as in CPU-BOOST)
-
-	  Enable this if you'd like the ability to disable MPDecision.
-
-config MSM_SLEEPER
-	bool "Limit max frequency while screen is off"
-	default n
-	help
-	  Limit max frequency while screen is off
-
-config BRICKED_HOTPLUG
-	bool "Enable kernel based mpdecision"
-	depends on MSM_RUN_QUEUE_STATS
-	default n
-	help
-	  This enables kernel based multi core control.
-	  (up/down hotplug based on load)
-
-config FAST_HOTPLUG
-	bool "Enable fast hotplug"
-	default n
-	help
-	  Kernel based core control.
-
-config LOW_CPUCLOCKS
-	bool "Enable ultra low CPU clocks"
-	default y
-	help
-	  Ultra low cpu frequencies enabled for CPU and L2 Cache
-
-config CPU_UNDERCLOCK
-	bool "Enable CPU Underclocking"
-	default n
-	help
-	 Krait underclocking
-
-config CPU_VOLTAGE_TABLE
-	bool "Enable CPU Voltage Table via sysfs for adjustements"
-	default y
-	help
-	  Krait User Votlage Control
-
-config MSM_HOTPLUG
-	bool "MSM hotplug driver"
-	depends on HOTPLUG_CPU
-	default n
-	help
-	  The MSM hotplug driver controls on-/offlining of additional cores based
-	  on current cpu load.
-
-config INTELLI_PLUG
-	bool "intelliplug hotplug"
-	default n
-	help
-	  An improved hotplug by faux123.
-
-config DYN_HOTPLUG
-	bool "hotplug driver"
-	depends on HOTPLUG_CPU
-	default n
-	help
-	  The Dynamic hotplug driver by Stratos Karafotis to automatically
-	  online/offline CPUs according to load.
-
-config ALUCARD_HOTPLUG
-	bool "Enable alucard-hotplug cpu hotplug driver"
-	default n
-	help
-	  Generic Alucard-hotplug cpu hotplug driver for ARM SOCs
-
-config MAKO_HOTPLUG
-	bool "Mako Hotplug"
-	default n
-	help
-	  Mako Hotplug: A custom hotplug by fransico franco
-
-config ASMP
-	bool "Multi-core automatic hotplug support"
-	depends on SMP
-	default n
-	help
-	  Automatically hotplugs the multiple cpu cores on and off
-	  based on cpu load and suspend state
 
 config MSM_AVS_HW
 	bool "Enable Adaptive Voltage Scaling (AVS)"
@@ -2671,21 +2615,5 @@ config MSM_CPU_PWRCTL
 	  Droop detector mechanism can adversely affect krait plls during
 	  stand alone power collapse operation. Selecting this option
 	  ensures that they are always off.
-
-config FORCE_FAST_CHARGE
-	bool "Force AC charge mode at will"
-	default y
-	help
-	  A simple sysfs interface to force adapters that
-	  are detected as USB to charge as AC.
-
-config HAS_MACH_MEMUTILS
-	default n
-	bool "Motorola MSM mcmcpy enhancements"
-	help
-	  Faster memcpy performance for Krait
-
-config STATE_NOTIFIER
-	 bool "State Notifier"
 
 endif

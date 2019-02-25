@@ -27,9 +27,9 @@ struct vfsmount;
 
 /* The hash is always the low bits of hash_len */
 #ifdef __LITTLE_ENDIAN
-#define HASH_LEN_DECLARE u32 hash; u32 len;
+ #define HASH_LEN_DECLARE u32 hash; u32 len;
 #else
-#define HASH_LEN_DECLARE u32 len; u32 hash;
+ #define HASH_LEN_DECLARE u32 len; u32 hash;
 #endif
 
 /*
@@ -42,10 +42,10 @@ struct vfsmount;
 struct qstr {
 	union {
 		struct {
-		HASH_LEN_DECLARE;
+			HASH_LEN_DECLARE;
+		};
+		u64 hash_len;
 	};
-	u64 hash_len;
-    };
 	const unsigned char *name;
 };
 
@@ -419,13 +419,6 @@ static inline bool d_need_lookup(struct dentry *dentry)
 }
 
 extern void d_clear_need_lookup(struct dentry *dentry);
-
-static inline bool d_is_su(const struct dentry *dentry)
-{
-	return dentry &&
-	       dentry->d_name.len == 2 &&
-	       !memcmp(dentry->d_name.name, "su", 2);
-}
 
 extern int sysctl_vfs_cache_pressure;
 

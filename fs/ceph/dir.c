@@ -635,8 +635,8 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
 }
 
 int ceph_atomic_open(struct inode *dir, struct dentry *dentry,
-		    struct file *file, unsigned flags, umode_t mode,
-		    int *opened)
+		     struct file *file, unsigned flags, umode_t mode,
+		     int *opened)
 {
 	int err;
 	struct dentry *res = NULL;
@@ -730,7 +730,7 @@ static int ceph_mknod(struct inode *dir, struct dentry *dentry,
 }
 
 static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
-		       struct nameidata *nd)
+		       bool excl)
 {
 	return ceph_mknod(dir, dentry, mode, 0);
 }
@@ -1094,7 +1094,7 @@ static void ceph_d_release(struct dentry *dentry)
 }
 
 static int ceph_snapdir_d_revalidate(struct dentry *dentry,
-					unsigned int flags)
+					  unsigned int flags)
 {
 	/*
 	 * Eventually, we'll want to revalidate snapped metadata

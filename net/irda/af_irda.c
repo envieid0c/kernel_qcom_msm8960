@@ -305,9 +305,6 @@ static void irda_connect_response(struct irda_sock *self)
 
 	IRDA_DEBUG(2, "%s()\n", __func__);
 
-	if (protocol < 0 || protocol > SK_PROTOCOL_MAX)
-		return -EINVAL;
-
 	skb = alloc_skb(TTP_MAX_HEADER + TTP_SAR_HEADER,
 			GFP_ATOMIC);
 	if (skb == NULL) {

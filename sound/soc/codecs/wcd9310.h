@@ -180,18 +180,9 @@ struct tabla_mbhc_config {
 	/* swap_gnd_mic returns true if extern GND/MIC swap switch toggled */
 	bool (*swap_gnd_mic) (struct snd_soc_codec *);
 };
-extern int tabla_check_bandgap_status(struct snd_soc_codec *codec);
-
-extern void tabla_set_h2w_status(struct snd_soc_codec *codec, u32 status);
 
 extern int tabla_hs_detect(struct snd_soc_codec *codec,
 			   const struct tabla_mbhc_config *cfg);
-
-enum h2w_status {
-	H2W_NONE = 0,
-	H2W_HEADSET,
-	H2W_HEADPHONE,
-};
 
 struct anc_header {
 	u32 reserved[3];
@@ -201,7 +192,7 @@ struct anc_header {
 extern int tabla_mclk_enable(struct snd_soc_codec *codec, int mclk_enable,
 			     bool dapm);
 
-extern void *tabla_mbhc_cal_btn_det_mp(struct tabla_mbhc_btn_detect_cfg
+extern void *tabla_mbhc_cal_btn_det_mp(const struct tabla_mbhc_btn_detect_cfg
 				       *btn_det,
 				       const enum tabla_mbhc_btn_det_mem mem);
 

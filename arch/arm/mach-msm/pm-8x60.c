@@ -380,6 +380,40 @@ module_param_named(sleep_time_override,
 #endif
 
 #define SCLK_HZ (32768)
+#define MSM_PM_SLEEP_TICK_LIMIT (0x6DDD000)
+
+static uint32_t msm_pm_max_sleep_time;
+
+/*
+ * Convert time from nanoseconds to slow clock ticks, then cap it to the
+ * specified limit
+ */
+static int64_t msm_pm_convert_and_cap_time(int64_t time_ns, int64_t limit)
+{
+	do_div(time_ns, NSEC_PER_SEC / SCLK_HZ);
+	return (time_ns > limit) ? limit : time_ns;
+}
+
+/*
+ * Set the sleep time for suspend.  0 means infinite sleep time.
+ */
+void msm_pm_set_max_sleep_time(int64_t max_sleep_time_ns)
+{
+	if (max_sleep_time_ns == 0) {
+		msm_pm_max_sleep_time = 0;
+	} else {
+		msm_pm_max_sleep_time = (uint32_t)msm_pm_convert_and_cap_time(
+			max_sleep_time_ns, MSM_PM_SLEEP_TICK_LIMIT);
+
+		if (msm_pm_max_sleep_time == 0)
+			msm_pm_max_sleep_time = 1;
+	}
+
+	if (msm_pm_debug_mask & MSM_PM_DEBUG_SUSPEND)
+		pr_info("%s: Requested %lld ns Giving %u sclk ticks\n",
+			__func__, max_sleep_time_ns, msm_pm_max_sleep_time);
+}
+EXPORT_SYMBOL(msm_pm_set_max_sleep_time);
 
 struct reg_data {
 	uint32_t reg;
@@ -658,7 +692,7 @@ static int64_t msm_pm_timer_enter_suspend(int64_t *period)
 	int64_t time = 0;
 
 	if (msm_pm_use_qtimer)
-		return ktime_to_ns(ktime_get());
+		return sched_clock();
 
 	time = msm_timer_get_sclk_time(period);
 	if (!time)
@@ -670,7 +704,7 @@ static int64_t msm_pm_timer_enter_suspend(int64_t *period)
 static int64_t msm_pm_timer_exit_suspend(int64_t time, int64_t period)
 {
 	if (msm_pm_use_qtimer)
-		return ktime_to_ns(ktime_get()) - time;
+		return sched_clock() - time;
 
 	if (time != 0) {
 		int64_t end_time = msm_timer_get_sclk_time(NULL);
@@ -850,16 +884,23 @@ int msm_pm_idle_enter(enum msm_pm_sleep_mode sleep_mode)
 		break;
 
 	case MSM_PM_SLEEP_MODE_POWER_COLLAPSE: {
+		int64_t timer_expiration = 0;
 		bool timer_halted = false;
-		uint32_t sleep_delay = 1;
+		uint32_t sleep_delay;
 		int ret = -ENODEV;
 		int notify_rpm =
 			(sleep_mode == MSM_PM_SLEEP_MODE_POWER_COLLAPSE);
 		int collapsed;
 
-		sleep_delay = (uint32_t)msm_pm_timer_enter_idle();
+		timer_expiration = msm_pm_timer_enter_idle();
+
+		sleep_delay = (uint32_t) msm_pm_convert_and_cap_time(
+			timer_expiration, MSM_PM_SLEEP_TICK_LIMIT);
 		if (sleep_delay == 0) /* 0 would mean infinite time */
 			sleep_delay = 1;
+
+		if (MSM_PM_DEBUG_IDLE_CLK & msm_pm_debug_mask)
+			clock_debug_print_enabled();
 
 		if (pm_sleep_ops.enter_sleep)
 			ret = pm_sleep_ops.enter_sleep(sleep_delay,
@@ -961,17 +1002,18 @@ static int msm_pm_enter(suspend_state_t state)
 		void *rs_limits = NULL;
 		int ret = -ENODEV;
 		uint32_t power;
-		uint32_t msm_pm_max_sleep_time = 0;
 
 		if (MSM_PM_DEBUG_SUSPEND & msm_pm_debug_mask)
 			pr_info("%s: power collapse\n", __func__);
+
+		clock_debug_print_enabled();
 
 #ifdef CONFIG_MSM_SLEEP_TIME_OVERRIDE
 		if (msm_pm_sleep_time_override > 0) {
 			int64_t ns = NSEC_PER_SEC *
 				(int64_t) msm_pm_sleep_time_override;
-			do_div(ns, NSEC_PER_SEC / SCLK_HZ);
-			msm_pm_max_sleep_time = (uint32_t) ns;
+			msm_pm_set_max_sleep_time(ns);
+			msm_pm_sleep_time_override = 0;
 		}
 #endif /* CONFIG_MSM_SLEEP_TIME_OVERRIDE */
 		if (pm_sleep_ops.lowest_limits)

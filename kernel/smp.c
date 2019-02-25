@@ -12,7 +12,6 @@
 #include <linux/gfp.h>
 #include <linux/smp.h>
 #include <linux/cpu.h>
-#include <asm/relaxed.h>
 
 #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
 static struct {
@@ -76,7 +75,7 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
 	return NOTIFY_OK;
 }
 
-static struct notifier_block hotplug_cfd_notifier = {
+static struct notifier_block __cpuinitdata hotplug_cfd_notifier = {
 	.notifier_call		= hotplug_cfd,
 };
 
@@ -105,8 +104,8 @@ void __init call_function_init(void)
  */
 static void csd_lock_wait(struct call_single_data *data)
 {
-	while (cpu_relaxed_read_short(&data->flags) & CSD_FLAG_LOCK)
-		cpu_read_relax();
+	while (data->flags & CSD_FLAG_LOCK)
+		cpu_relax();
 }
 
 static void csd_lock(struct call_single_data *data)

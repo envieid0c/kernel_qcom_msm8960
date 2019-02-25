@@ -891,6 +891,7 @@ nfs4_file_open(struct inode *inode, struct file *filp)
 	 * revalidation, so handle it here by dropping the dentry and returning
 	 * -EOPENSTALE.  The VFS will retry the lookup/create/open.
 	 */
+
 	dprintk("NFS: open file(%s/%s)\n",
 		dentry->d_parent->d_name.name,
 		dentry->d_name.name);

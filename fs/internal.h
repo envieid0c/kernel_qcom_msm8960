@@ -81,7 +81,6 @@ extern struct super_block *user_get_super(dev_t);
 /*
  * open.c
  */
-
 struct open_flags {
 	int open_flag;
 	umode_t mode;
@@ -95,8 +94,8 @@ extern struct file *do_file_open_root(struct dentry *, struct vfsmount *,
 
 extern long do_handle_open(int mountdirfd,
 			   struct file_handle __user *ufh, int open_flag);
-
 extern int open_check_o_direct(struct file *f);
+
 /*
  * inode.c
  */

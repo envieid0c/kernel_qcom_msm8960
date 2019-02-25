@@ -87,24 +87,15 @@ static void fault_detect_read(struct kgsl_device *device)
 static inline bool _isidle(struct kgsl_device *device)
 {
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
-	unsigned int ts, i;
-
-	if (!kgsl_pwrctrl_isenabled(device))
-		goto ret;
+	unsigned int ts;
 
 	ts = kgsl_readtimestamp(device, NULL, KGSL_TIMESTAMP_RETIRED);
 
-	/* If GPU HW status is idle return true */
-	if (adreno_hw_isidle(device) ||
-		(ts == adreno_dev->ringbuffer.global_ts))
-	goto ret;
+	if (adreno_isidle(device) == true &&
+		(ts >= adreno_dev->ringbuffer.global_ts))
+		return true;
 
 	return false;
-
-ret:
-	for (i = 0; i < FT_DETECT_REGS_COUNT; i++)
-		fault_detect_regs[i] = 0;
-	return true;
 }
 
 /**
@@ -1461,8 +1452,6 @@ done:
 		/* There are still things in flight - update the idle counts */
 		mutex_lock(&device->mutex);
 		kgsl_pwrscale_idle(device);
-		mod_timer(&device->idle_timer, jiffies +
-			device->pwrctrl.interval_timeout);
 		mutex_unlock(&device->mutex);
 	} else {
 		/* There is nothing left in the pipeline.  Shut 'er down boys */

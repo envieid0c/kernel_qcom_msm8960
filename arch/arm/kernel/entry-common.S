@@ -53,13 +53,9 @@ fast_work_pending:
 work_pending:
 	tst	r1, #_TIF_NEED_RESCHED
 	bne	work_resched
-	/*
-	 * TIF_SIGPENDING or TIF_NOTIFY_RESUME must've been set if we got here
-	 */
-	ldr	r2, [sp, #S_PSR]
+	tst	r1, #_TIF_SIGPENDING|_TIF_NOTIFY_RESUME
+	beq	no_work_pending
 	mov	r0, sp				@ 'regs'
-	tst	r2, #15				@ are we returning to user mode?
-	bne	no_work_pending			@ no?  just leave, then...
 	mov	r2, why				@ 'syscall'
 	tst	r1, #_TIF_SIGPENDING		@ delivering a signal?
 	movne	why, #0				@ prevent further restarts
@@ -454,7 +450,9 @@ ENTRY(vector_swi)
 	tst	r10, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
 	bne	__sys_trace
 
-	invoke_syscall tbl, scno, r10, ret_fast_syscall
+	cmp	scno, #NR_syscalls		@ check upper syscall limit
+	adr	lr, BSYM(ret_fast_syscall)	@ return address
+	ldrcc	pc, [tbl, scno, lsl #2]		@ call sys_* routine
 
 	add	r1, sp, #S_OFF
 2:	mov	why, #0				@ no longer a real syscall
@@ -473,8 +471,13 @@ __sys_trace:
 	add	r1, sp, #S_OFF
 	mov	r0, #0				@ trace entry [IP = 0]
 	bl	syscall_trace
-	mov	scno, r0
-	invoke_syscall tbl, scno, r10, __sys_trace_return, reload=1
+
+	adr	lr, BSYM(__sys_trace_return)	@ return address
+	mov	scno, r0			@ syscall number (possibly new)
+	add	r1, sp, #S_R0 + S_OFF		@ pointer to regs
+	cmp	scno, #NR_syscalls		@ check upper syscall limit
+	ldmccia	r1, {r0 - r3}			@ have to reload r0 - r3
+	ldrcc	pc, [tbl, scno, lsl #2]		@ call sys_* routine
 	b	2b
 
 __sys_trace_return:
@@ -519,10 +522,6 @@ sys_syscall:
 		bic	scno, r0, #__NR_OABI_SYSCALL_BASE
 		cmp	scno, #__NR_syscall - __NR_SYSCALL_BASE
 		cmpne	scno, #NR_syscalls	@ check range
-#ifdef CONFIG_CPU_SPECTRE
-		movhs	scno, #0
-		csdb
-#endif
 		stmloia	sp, {r5, r6}		@ shuffle args
 		movlo	r0, r1
 		movlo	r1, r2

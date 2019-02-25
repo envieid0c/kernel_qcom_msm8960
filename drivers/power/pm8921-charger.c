@@ -27,15 +27,10 @@
 #include <linux/workqueue.h>
 #include <linux/debugfs.h>
 #include <linux/slab.h>
-#include <linux/blx.h>
 #include <linux/mfd/pm8xxx/batt-alarm.h>
 
 #include <mach/msm_xo.h>
 #include <mach/msm_hsusb.h>
-
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/fastchg.h>
-#endif
 
 #define CHG_BUCK_CLOCK_CTRL	0x14
 
@@ -90,8 +85,6 @@
 #define EOC_CHECK_PERIOD_MS	10000
 /* check for USB unplug every 200 msecs */
 #define UNPLUG_CHECK_WAIT_PERIOD_MS 200
-/* wait for 1s to complete the chg gone handling */
-#define CHG_GONE_WAIT_TIMEOUT 1000
 
 enum chg_fsm_state {
 	FSM_STATE_OFF_0 = 0,
@@ -284,7 +277,6 @@ struct pm8921_chg_chip {
 	struct delayed_work		unplug_usbcheck_work;
 	struct delayed_work		vin_collapse_check_work;
 	struct wake_lock		eoc_wake_lock;
-	struct wake_lock		chg_gone_wake_lock;
 	enum pm8921_chg_cold_thr	cold_thr;
 	enum pm8921_chg_hot_thr		hot_thr;
 	int				rconn_mohm;
@@ -1585,18 +1577,14 @@ static int get_prop_batt_status(struct pm8921_chg_chip *chip)
 	}
 
 	if (chip->eoc_check_soc) {
-#ifdef CONFIG_BLX
-	if (get_prop_batt_capacity(chip) >= get_charginglimit())
-#else
-	if (get_prop_batt_capacity(chip) == 100) 
-#endif
+		if (get_prop_batt_capacity(chip) == 100) {
 			if (batt_state == POWER_SUPPLY_STATUS_CHARGING)
 				batt_state = POWER_SUPPLY_STATUS_FULL;
-	} else {
+		} else {
 			if (batt_state == POWER_SUPPLY_STATUS_FULL)
 				batt_state = POWER_SUPPLY_STATUS_CHARGING;
 		}
-
+	}
 
 	pr_debug("batt_state = %d fsm_state = %d \n",batt_state, fsm_state);
 	return batt_state;
@@ -1747,39 +1735,7 @@ static void __pm8921_charger_vbus_draw(unsigned int mA)
 			i--;
 		if (i < 0)
 			i = 0;
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		if (force_fast_charge == 1)
-			i = 14;
-		else if (force_fast_charge == 2) {
-		    switch (fast_charge_level) {
-			case FAST_CHARGE_500:
-				i = 2;
-				break;
-			case FAST_CHARGE_700:
-				i = 4;
-				break;
-			case FAST_CHARGE_900:
-				i = 8;
-				break;
-			case FAST_CHARGE_1100:
-				i = 10;
-				break;
-			case FAST_CHARGE_1300:
-				i = 12;
-				break;
-			case FAST_CHARGE_1500:
-				i = 14;
-				break;
-			default:
-				break;
-			}
-		}
 		rc = pm_chg_iusbmax_set(the_chip, i);
-		pr_info("charge curent index => %d\n", i);
-#else
-		rc = pm_chg_iusbmax_set(the_chip, i);
-#endif
-
 		if (rc) {
 			pr_err("unable to set iusb to %d rc = %d\n", i, rc);
 		}
@@ -3065,9 +3021,6 @@ static irqreturn_t chg_gone_irq_handler(int irq, void *data)
 	struct pm8921_chg_chip *chip = data;
 	int chg_gone, usb_chg_plugged_in;
 
-	wake_lock_timeout(&chip->chg_gone_wake_lock,
-		msecs_to_jiffies(CHG_GONE_WAIT_TIMEOUT));
-
 	usb_chg_plugged_in = is_usb_chg_plugged_in(chip);
 	chg_gone = pm_chg_get_rt_status(chip, CHG_GONE_IRQ);
 
@@ -3461,11 +3414,7 @@ static void eoc_worker(struct work_struct *work)
 
 	if (chip->eoc_check_soc) {
 		percent_soc = get_prop_batt_capacity(chip);
-#ifdef CONFIG_BLX
-	if (percent_soc >= get_charginglimit())
-#else
-	if (percent_soc == 100)
-#endif
+		if (percent_soc == 100)
 			count = CONSECUTIVE_COUNT;
 	}
 
@@ -3478,17 +3427,10 @@ static void eoc_worker(struct work_struct *work)
 		if (is_ext_charging(chip))
 			chip->ext_charge_done = true;
 
-#ifdef CONFIG_BLX
-	//if (chip->is_bat_warm || chip->is_bat_cool)
-	//  chip->bms_notify.is_battery_full = 0;
-	//else
-	//  chip->bms_notify.is_battery_full = 1;
-#else
-	if (chip->is_bat_warm || chip->is_bat_cool)
-		chip->bms_notify.is_battery_full = 0;
-	else
-		chip->bms_notify.is_battery_full = 1;
-#endif
+		if (chip->is_bat_warm || chip->is_bat_cool)
+			chip->bms_notify.is_battery_full = 0;
+		else
+			chip->bms_notify.is_battery_full = 1;
 		/* declare end of charging by invoking chgdone interrupt */
 		chgdone_irq_handler(chip->pmic_chg_irq[CHGDONE_IRQ], chip);
 		wake_unlock(&chip->eoc_wake_lock);
@@ -4695,9 +4637,6 @@ static int __devinit pm8921_charger_probe(struct platform_device *pdev)
 	the_chip = chip;
 
 	wake_lock_init(&chip->eoc_wake_lock, WAKE_LOCK_SUSPEND, "pm8921_eoc");
-	wake_lock_init(&chip->chg_gone_wake_lock,
-		WAKE_LOCK_SUSPEND, "pm8921_chg_gone");
-
 	INIT_DELAYED_WORK(&chip->eoc_work, eoc_worker);
 	INIT_DELAYED_WORK(&chip->vin_collapse_check_work,
 						vin_collapse_check_worker);
@@ -4780,7 +4719,6 @@ static int __devexit pm8921_charger_remove(struct platform_device *pdev)
 {
 	struct pm8921_chg_chip *chip = platform_get_drvdata(pdev);
 
-	wake_lock_destroy(&chip->chg_gone_wake_lock);
 	device_remove_file(&pdev->dev, &dev_attr_charge);
 	free_irqs(chip);
 	platform_set_drvdata(pdev, NULL);

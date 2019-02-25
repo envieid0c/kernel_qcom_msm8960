@@ -190,6 +190,7 @@ struct snd_compr_audio_info {
 #define SNDRV_COMPRESS_DRAIN		_IO('C', 0x34)
 #define SNDRV_COMPRESS_NEXT_TRACK	_IO('C', 0x35)
 #define SNDRV_COMPRESS_PARTIAL_DRAIN	_IO('C', 0x36)
+#define SNDRV_COMPRESS_METADATA_MODE    _IOW('C', 0x99, bool)
 /*
  * TODO
  * 1. add mmap support

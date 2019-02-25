@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -91,7 +91,7 @@ static inline int buf_get_pages(void *addr, int sz, int nr_pages, int access,
 	int n = -1, err = 0;
 
 	VERIFY(err, 0 != access_ok(access ? VERIFY_WRITE : VERIFY_READ,
-					(void __user *)start, len));
+			      (void __user *)start, len));
 	if (err)
 		goto bail;
 	VERIFY(err, 0 != (vma = find_vma(current->mm, start)));
@@ -294,8 +294,7 @@ static int get_page_list(uint32_t kernel, uint32_t sc, remote_arg_t *pra,
 	pgstart->size = obuf->size;
 	for (i = 0; i < inbufs + outbufs; ++i) {
 		void *buf;
-		int num;
-		ssize_t len;
+		int len, num;
 
 		list[i].num = 0;
 		list[i].pgidx = 0;
@@ -629,28 +628,27 @@ static int alloc_dev(struct fastrpc_device **dev)
 static int get_dev(struct fastrpc_apps *me, struct fastrpc_device **rdev)
 {
 	struct hlist_head *head;
-	struct fastrpc_device *dev = 0, *devfree = 0;
-	struct hlist_node *pos, *n;
+	struct fastrpc_device *dev = 0;
+	struct hlist_node *n;
 	uint32_t h = hash_32(current->tgid, RPC_HASH_BITS);
 	int err = 0;
 
 	spin_lock(&me->hlock);
 	head = &me->htbl[h];
-	hlist_for_each_entry_safe(dev, pos, n, head, hn) {
+	hlist_for_each_entry(dev, n, head, hn) {
 		if (dev->tgid == current->tgid) {
 			hlist_del(&dev->hn);
-			devfree = dev;
 			break;
 		}
 	}
 	spin_unlock(&me->hlock);
-	VERIFY(err, devfree != 0);
+	VERIFY(err, dev != 0);
 	if (err)
 		goto bail;
-	*rdev = devfree;
+	*rdev = dev;
  bail:
 	if (err) {
-		free_dev(devfree);
+		free_dev(dev);
 		err = alloc_dev(rdev);
 	}
 	return err;
@@ -703,11 +701,6 @@ static int fastrpc_internal_invoke(struct fastrpc_apps *me, uint32_t kernel,
 						&obuf));
 	if (err)
 		goto bail;
-
-	VERIFY(err, NULL != rpra);
-	if (err)
-		goto bail;
-
 	inv_args(sc, rpra, obuf.used);
 	VERIFY(err, 0 == (interrupted =
 			wait_for_completion_interruptible(&ctx->work)));
@@ -780,23 +773,22 @@ static void cleanup_current_dev(void)
 	struct fastrpc_apps *me = &gfa;
 	uint32_t h = hash_32(current->tgid, RPC_HASH_BITS);
 	struct hlist_head *head;
-	struct hlist_node *pos, *n;
-	struct fastrpc_device *dev, *devfree;
+	struct hlist_node *pos;
+	struct fastrpc_device *dev;
 
  rnext:
-	devfree = dev = 0;
+	dev = 0;
 	spin_lock(&me->hlock);
 	head = &me->htbl[h];
-	hlist_for_each_entry_safe(dev, pos, n, head, hn) {
+	hlist_for_each_entry(dev, pos, head, hn) {
 		if (dev->tgid == current->tgid) {
 			hlist_del(&dev->hn);
-			devfree = dev;
 			break;
 		}
 	}
 	spin_unlock(&me->hlock);
-	if (devfree) {
-		free_dev(devfree);
+	if (dev) {
+		free_dev(dev);
 		goto rnext;
 	}
 	return;
@@ -849,10 +841,6 @@ static long fastrpc_device_ioctl(struct file *file, unsigned int ioctl_num,
 			if (err)
 				goto bail;
 		}
-		VERIFY(err, NULL != pra);
-		if (err)
-			goto bail;
-
 		VERIFY(err, 0 == copy_from_user(pra, invoke.pra, bufs));
 		if (err)
 			goto bail;

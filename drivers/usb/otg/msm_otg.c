@@ -55,10 +55,6 @@
 #include <linux/gpio.h>
 #include <asm/mach-types.h>
 
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/fastchg.h>
-#endif
-
 #define MSM_USB_BASE	(motg->regs)
 #define DRIVER_NAME	"msm_otg"
 
@@ -402,9 +398,7 @@ static struct usb_phy_io_ops msm_otg_io_ops = {
 	.write = ulpi_write,
 };
 
-#ifdef CONFIG_CHARGER_SMB345
 static int otg_host_on = 0;
-#endif
 static void ulpi_init(struct msm_otg *motg)
 {
 	struct msm_otg_platform_data *pdata = motg->pdata;
@@ -416,7 +410,17 @@ static void ulpi_init(struct msm_otg *motg)
 	while (seq[0] >= 0) {
 		dev_vdbg(motg->phy.dev, "ulpi: write 0x%02x to 0x%02x\n",
 				seq[0], seq[1]);
-		ulpi_write(&motg->phy, seq[0], seq[1]);
+		if (otg_host_on == 1 && seq[1] == 0x81) {
+			if (machine_is_apq8064_flo()) {
+				printk(KERN_INFO"Host mode: Set DC level as 0x68 for flo.\n");
+				ulpi_write(&motg->phy, 0x68, seq[1]);
+			} else if(machine_is_apq8064_deb()) {
+                                printk(KERN_INFO"Host mode: Set DC level as 0x61 for deb.\n");
+                                ulpi_write(&motg->phy, 0x61, seq[1]);
+			}
+		} else {
+			ulpi_write(&motg->phy, seq[0], seq[1]);
+		}
 		seq += 2;
 	}
 }
@@ -1225,11 +1229,6 @@ static void msm_otg_notify_charger(struct msm_otg *motg, unsigned mA)
 		dev_err(motg->phy.dev,
 			"Failed notifying %d charger type to PMIC\n",
 							motg->chg_type);
-
-#ifdef CONFIG_FORCE_FAST_CHARGE
-	if (force_fast_charge > 0)
-	mA = IDEV_ACA_CHG_MAX;
-#endif
 
 	if (motg->cur_power == mA)
 		return;
@@ -2075,8 +2074,6 @@ static void msm_chg_block_on(struct msm_otg *motg)
 		/* Clear alt interrupt latch and enable bits */
 		ulpi_write(phy, 0x1F, 0x92);
 		ulpi_write(phy, 0x1F, 0x95);
-		/* re-enable DP and DM pull down resistors */
-		ulpi_write(phy, 0x6, 0xB);
 		udelay(100);
 		break;
 	default:
@@ -2731,8 +2728,6 @@ static void msm_otg_sm_work(struct work_struct *w)
 			if (TA_WAIT_BCON > 0)
 				msm_otg_start_timer(motg, TA_WAIT_BCON,
 					A_WAIT_BCON);
-			/* Clear BSV in host mode */
-			clear_bit(B_SESS_VLD, &motg->inputs);
 			msm_otg_start_host(otg, 1);
 			msm_chg_enable_aca_det(motg);
 			msm_chg_disable_aca_intr(motg);

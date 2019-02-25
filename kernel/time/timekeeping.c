@@ -87,6 +87,13 @@ struct timekeeper {
 
 static struct timekeeper timekeeper;
 
+/*
+ * This read-write spinlock protects us from races in SMP while
+ * playing with xtime.
+ */
+__cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
+
+
 /* flag for if timekeeping is suspended */
 int __read_mostly timekeeping_suspended;
 
@@ -1327,7 +1334,9 @@ struct timespec get_monotonic_coarse(void)
 }
 
 /*
- * Must hold jiffies_lock
+ * The 64-bit jiffies value is not atomic - you MUST NOT read it
+ * without sampling the sequence number in xtime_lock.
+ * jiffies is defined in the linker script...
  */
 void do_timer(unsigned long ticks)
 {
@@ -1432,7 +1441,7 @@ int do_adjtimex(struct timex *txc)
  */
 void xtime_update(unsigned long ticks)
 {
-	write_seqlock(&jiffies_lock);
+	write_seqlock(&xtime_lock);
 	do_timer(ticks);
-	write_sequnlock(&jiffies_lock);
+	write_sequnlock(&xtime_lock);
 }

@@ -34,10 +34,6 @@
 #define UPDATE_BUSY_VAL		1000000
 #define UPDATE_BUSY		50
 
-#ifdef CONFIG_CPU_FREQ_GOV_ELEMENTALX
-int graphics_boost = 2;
-#endif
-
 /*
  * Expected delay for post-interrupt processing on A3xx.
  * The delay may be longer, gradually increase the delay
@@ -192,11 +188,6 @@ void kgsl_pwrctrl_pwrlevel_change(struct kgsl_device *device,
 
 
 	trace_kgsl_pwrlevel(device, pwr->active_pwrlevel, pwrlevel->gpu_freq);
-
-#ifdef CONFIG_CPU_FREQ_GOV_ELEMENTALX
-        graphics_boost = pwr->active_pwrlevel;
-#endif
-//	graphics_boost = pwr->active_pwrlevel;
 }
 
 EXPORT_SYMBOL(kgsl_pwrctrl_pwrlevel_change);
@@ -1066,7 +1057,7 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 	pwr->thermal_pwrlevel = 0;
 
 	pwr->active_pwrlevel = pdata->init_level;
-	pwr->default_pwrlevel = pwr->min_pwrlevel;
+	pwr->default_pwrlevel = pdata->init_level;
 	pwr->init_pwrlevel = pdata->init_level;
 	for (i = 0; i < pdata->num_levels; i++) {
 		pwr->pwrlevels[i].gpu_freq =
@@ -1113,7 +1104,7 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 		if (!pwr->pcl) {
 			KGSL_PWR_ERR(device,
 					"msm_bus_scale_register_client failed: "
-					"id %d table %pK", device->id,
+					"id %d table %p", device->id,
 					pdata->bus_scale_table);
 			result = -EINVAL;
 			goto done;
@@ -1411,16 +1402,9 @@ int kgsl_pwrctrl_sleep(struct kgsl_device *device)
 }
 EXPORT_SYMBOL(kgsl_pwrctrl_sleep);
 
-/*
- * kgsl_pwrctrl_wake() - Power up the GPU from a slumber/sleep state
- * @device - Pointer to the kgsl_device struct
- * @priority - Boolean flag to indicate that the GPU start should be run in the
- * higher priority thread
- *
- * Resume the GPU from a lower power state to ACTIVE.  The caller to this
- * fucntion must host the kgsl_device mutex.
- */
-int kgsl_pwrctrl_wake(struct kgsl_device *device, int priority)
+/******************************************************************/
+/* Caller must hold the device mutex. */
+int kgsl_pwrctrl_wake(struct kgsl_device *device)
 {
 	int status = 0;
 	unsigned int context_id;
@@ -1431,8 +1415,7 @@ int kgsl_pwrctrl_wake(struct kgsl_device *device, int priority)
 	kgsl_pwrctrl_request_state(device, KGSL_STATE_ACTIVE);
 	switch (device->state) {
 	case KGSL_STATE_SLUMBER:
-		status = device->ftbl->start(device, priority);
-
+		status = device->ftbl->start(device);
 		if (status) {
 			kgsl_pwrctrl_request_state(device, KGSL_STATE_NONE);
 			KGSL_DRV_ERR(device, "start failed %d\n", status);
@@ -1567,7 +1550,7 @@ int kgsl_active_count_get(struct kgsl_device *device)
 		wait_for_completion(&device->hwaccess_gate);
 		mutex_lock(&device->mutex);
 
-		ret = kgsl_pwrctrl_wake(device, 1);
+		ret = kgsl_pwrctrl_wake(device);
 	}
 	if (ret == 0)
 		atomic_inc(&device->active_cnt);

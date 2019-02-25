@@ -182,7 +182,7 @@ __setup("elevator=", elevator_setup);
 
 static struct kobj_type elv_ktype;
 
-struct elevator_queue *elevator_alloc(struct request_queue *q,
+static struct elevator_queue *elevator_alloc(struct request_queue *q,
 				  struct elevator_type *e)
 {
 	struct elevator_queue *eq;
@@ -210,7 +210,6 @@ err:
 	elevator_put(e);
 	return NULL;
 }
-EXPORT_SYMBOL(elevator_alloc);
 
 static void elevator_release(struct kobject *kobj)
 {

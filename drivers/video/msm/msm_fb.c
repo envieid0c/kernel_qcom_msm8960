@@ -67,7 +67,16 @@ static unsigned char *fbram_phys;
 static int fbram_size;
 static boolean bf_supported;
 
+#if !defined(CONFIG_MACH_APQ8064_FLO) && !defined(CONFIG_MACH_APQ8064_DEB)
 unsigned long backlight_duration = 0;
+#else
+/*
+ * Set backlight on resume after 50 ms after first
+ * pan display on the panel. This is to avoid panel specific
+ * transients during resume.
+ */
+unsigned long backlight_duration = (HZ/20);
+#endif
 static struct platform_device *pdev_list[MSM_FB_MAX_DEV_LIST];
 static int pdev_list_cnt;
 
@@ -284,6 +293,9 @@ static ssize_t msm_fb_fps_level_change(struct device *dev,
 	unsigned long val;
 	int ret;
 
+	if (mfd->panel.type != MIPI_VIDEO_PANEL)
+		return -EINVAL;
+
 	ret = kstrtoul(buf, 10, &val);
 	if (ret)
 		return ret;
@@ -350,7 +362,7 @@ static ssize_t msm_fb_msm_fb_type(struct device *dev,
 }
 
 static DEVICE_ATTR(msm_fb_type, S_IRUGO, msm_fb_msm_fb_type, NULL);
-static DEVICE_ATTR(msm_fb_fps_level, S_IRUGO | S_IWUSR, NULL, \
+static DEVICE_ATTR(msm_fb_fps_level, S_IRUGO | S_IWUSR | S_IWGRP, NULL, \
 				msm_fb_fps_level_change);
 static struct attribute *msm_fb_attrs[] = {
 	&dev_attr_msm_fb_type.attr,
@@ -405,7 +417,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 		iclient = msm_ion_client_create(-1, pdev->name);
 		if (IS_ERR_OR_NULL(iclient)) {
 			pr_err("msm_ion_client_create() return"
-				" error, val %pK\n", iclient);
+				" error, val %p\n", iclient);
 			iclient = NULL;
 		}
 
@@ -883,7 +895,7 @@ static void msmfb_early_resume(struct early_suspend *h)
 }
 #endif
 
-static int unset_bl_level = LED_FULL, bl_updated;
+static int unset_bl_level, bl_updated;
 #if defined(CONFIG_BACKLIGHT_LM3530)
 static int bl_level_old = 0x2A;
 #else

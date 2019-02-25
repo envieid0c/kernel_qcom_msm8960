@@ -23,11 +23,11 @@
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/export.h>
-#include <linux/sched_clock.h>
 
 #include <asm/cputype.h>
 #include <asm/localtimer.h>
 #include <asm/arch_timer.h>
+#include <asm/sched_clock.h>
 #include <asm/hardware/gic.h>
 #include <asm/system_info.h>
 
@@ -221,7 +221,7 @@ static int arch_timer_set_next_event(unsigned long evt,
 	return 0;
 }
 
-static int arch_timer_setup(struct clock_event_device *clk)
+static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
 {
 	/* setup clock event only once for CPU 0 */
 	if (!smp_processor_id() && clk->irq == arch_timer_ppi)
@@ -344,7 +344,7 @@ static struct clocksource clocksource_counter = {
 	.rating	= 400,
 	.read	= arch_counter_read,
 	.mask	= CLOCKSOURCE_MASK(56),
-	.flags	= CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_SUSPEND_NONSTOP,
+	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
 };
 
 static u32 arch_counter_get_cntvct32(void)
@@ -366,7 +366,7 @@ static u32 notrace arch_timer_update_sched_clock(void)
 	return arch_counter_get_cntvct32();
 }
 
-static void arch_timer_stop(struct clock_event_device *clk)
+static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
 {
 	pr_debug("arch_timer_teardown disable IRQ%d cpu #%d\n",
 		 clk->irq, smp_processor_id());
@@ -376,7 +376,7 @@ static void arch_timer_stop(struct clock_event_device *clk)
 	arch_timer_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
 }
 
-static struct local_timer_ops arch_timer_ops = {
+static struct local_timer_ops arch_timer_ops __cpuinitdata = {
 	.setup	= arch_timer_setup,
 	.stop	= arch_timer_stop,
 };

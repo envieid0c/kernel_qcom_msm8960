@@ -31,10 +31,9 @@
  * excluded.
  */
 #define	FANOTIFY_INIT_ALL_EVENT_F_BITS				( \
-	O_ACCMODE	| O_APPEND	| O_NONBLOCK	| \
-	__O_SYNC	| O_DSYNC	| O_CLOEXEC     | \
-	O_LARGEFILE	| O_NOATIME	)
-
+		O_ACCMODE	| O_APPEND	| O_NONBLOCK	| \
+		__O_SYNC	| O_DSYNC	| O_CLOEXEC     | \
+		O_LARGEFILE	| O_NOATIME	)
 
 extern const struct fsnotify_ops fanotify_fsnotify_ops;
 

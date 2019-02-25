@@ -16,41 +16,41 @@
 
 #define L2(x) (x)
 #define BW_MBPS(_bw) \
-    { \
-	.vectors = (struct msm_bus_vectors[]){ \
-	    {\
-		.src = MSM_BUS_MASTER_AMPSS_M0, \
-		.dst = MSM_BUS_SLAVE_EBI_CH0, \
-		.ib = (_bw) * 1000000ULL, \
-	    }, \
-	    { \
-		.src = MSM_BUS_MASTER_AMPSS_M1, \
-		.dst = MSM_BUS_SLAVE_EBI_CH0, \
-		.ib = (_bw) * 1000000ULL, \
-	    }, \
-	}, \
-	.num_paths = 2, \
-    }
+	{ \
+		.vectors = (struct msm_bus_vectors[]){ \
+			{\
+				.src = MSM_BUS_MASTER_AMPSS_M0, \
+				.dst = MSM_BUS_SLAVE_EBI_CH0, \
+				.ib = (_bw) * 1000000ULL, \
+			}, \
+			{ \
+				.src = MSM_BUS_MASTER_AMPSS_M1, \
+				.dst = MSM_BUS_SLAVE_EBI_CH0, \
+				.ib = (_bw) * 1000000ULL, \
+			}, \
+		}, \
+		.num_paths = 2, \
+	}
 
 /**
  * src_id - Clock source IDs.
  */
 enum src_id {
-    PLL_0 = 0,
-    HFPLL,
-    PLL_8,
-    NUM_SRC_ID,
+	PLL_0 = 0,
+	HFPLL,
+	PLL_8,
+	NUM_SRC_ID,
 };
 
 /**
  * enum pvs - IDs to distinguish between CPU frequency tables.
  */
 enum pvs {
-    PVS_SLOW = 0,
-    PVS_NOMINAL = 1,
-    PVS_FAST = 3,
-    PVS_FASTER = 4,
-    NUM_PVS = 7
+	PVS_SLOW = 0,
+	PVS_NOMINAL = 1,
+	PVS_FAST = 3,
+	PVS_FASTER = 4,
+	NUM_PVS = 7
 };
 
 /**
@@ -62,11 +62,11 @@ enum pvs {
  * enum scalables - IDs of frequency scalable hardware blocks.
  */
 enum scalables {
-    CPU0 = 0,
-    CPU1,
-    CPU2,
-    CPU3,
-    L2,
+	CPU0 = 0,
+	CPU1,
+	CPU2,
+	CPU3,
+	L2,
 };
 
 
@@ -74,23 +74,23 @@ enum scalables {
  * enum hfpll_vdd_level - IDs of HFPLL voltage levels.
  */
 enum hfpll_vdd_levels {
-    HFPLL_VDD_NONE,
-    HFPLL_VDD_LOW,
-    HFPLL_VDD_NOM,
-    HFPLL_VDD_HIGH,
-    NUM_HFPLL_VDD
+	HFPLL_VDD_NONE,
+	HFPLL_VDD_LOW,
+	HFPLL_VDD_NOM,
+	HFPLL_VDD_HIGH,
+	NUM_HFPLL_VDD
 };
 
 /**
  * enum vregs - IDs of voltage regulators.
  */
 enum vregs {
-    VREG_CORE,
-    VREG_MEM,
-    VREG_DIG,
-    VREG_HFPLL_A,
-    VREG_HFPLL_B,
-    NUM_VREG
+	VREG_CORE,
+	VREG_MEM,
+	VREG_DIG,
+	VREG_HFPLL_A,
+	VREG_HFPLL_B,
+	NUM_VREG
 };
 
 /**
@@ -103,12 +103,12 @@ enum vregs {
  * @cur_ua: Last-set current in uA.
  */
 struct vreg {
-    const char *name;
-    const int max_vdd;
-    struct regulator *reg;
-    struct rpm_regulator *rpm_reg;
-    int cur_vdd;
-    int cur_ua;
+	const char *name;
+	const int max_vdd;
+	struct regulator *reg;
+	struct rpm_regulator *rpm_reg;
+	int cur_vdd;
+	int cur_ua;
 };
 
 /**
@@ -119,10 +119,10 @@ struct vreg {
  * @pll_l_val: HFPLL "L" value to be applied when an HFPLL source is selected.
  */
 struct core_speed {
-    unsigned long khz;
-    int src;
-    u32 pri_src_sel;
-    u32 pll_l_val;
+	unsigned long khz;
+	int src;
+	u32 pri_src_sel;
+	u32 pll_l_val;
 };
 
 /**
@@ -133,10 +133,10 @@ struct core_speed {
  * @bw_level: Bandwidth performance level number.
  */
 struct l2_level {
-    const struct core_speed speed;
-    const int vdd_dig;
-    const int vdd_mem;
-    const unsigned int bw_level;
+	const struct core_speed speed;
+	const int vdd_dig;
+	const int vdd_mem;
+	const unsigned int bw_level;
 };
 
 /**
@@ -149,12 +149,12 @@ struct l2_level {
  * @avsdscr_setting: AVS DSCR configuration.
  */
 struct acpu_level {
-    const int use_for_scaling;
-    const struct core_speed speed;
-    const unsigned int l2_level;
-    int vdd_core;
-    int ua_core;
-    unsigned int avsdscr_setting;
+	const int use_for_scaling;
+	const struct core_speed speed;
+	const unsigned int l2_level;
+	int vdd_core;
+	int ua_core;
+	unsigned int avsdscr_setting;
 };
 
 /**
@@ -178,23 +178,23 @@ struct acpu_level {
  * @vdd: voltage requirements for each VDD level for the L2 PLL.
  */
 struct hfpll_data {
-    const u32 mode_offset;
-    const u32 l_offset;
-    const u32 m_offset;
-    const u32 n_offset;
-    const u32 config_offset;
-    const u32 config_val;
-    const bool has_user_reg;
-    const u32 user_offset;
-    const u32 user_val;
-    const u32 user_vco_mask;
-    const bool has_droop_ctl;
-    const u32 droop_offset;
-    const u32 droop_val;
-    u32 low_vdd_l_max;
-    u32 nom_vdd_l_max;
-    const u32 low_vco_l_max;
-    const int vdd[NUM_HFPLL_VDD];
+	const u32 mode_offset;
+	const u32 l_offset;
+	const u32 m_offset;
+	const u32 n_offset;
+	const u32 config_offset;
+	const u32 config_val;
+	const bool has_user_reg;
+	const u32 user_offset;
+	const u32 user_val;
+	const u32 user_vco_mask;
+	const bool has_droop_ctl;
+	const u32 droop_offset;
+	const u32 droop_val;
+	u32 low_vdd_l_max;
+	u32 nom_vdd_l_max;
+	const u32 low_vco_l_max;
+	const int vdd[NUM_HFPLL_VDD];
 };
 
 /**
@@ -212,17 +212,17 @@ struct hfpll_data {
  * @avs_enabled: True if avs is enabled for the scalabale. False otherwise.
  */
 struct scalable {
-    const phys_addr_t hfpll_phys_base;
-    void __iomem *hfpll_base;
-    const phys_addr_t aux_clk_sel_phys;
-    const u32 aux_clk_sel;
-    const u32 sec_clk_sel;
-    const u32 l2cpmr_iaddr;
-    const struct core_speed *cur_speed;
-    unsigned int l2_vote;
-    struct vreg vreg[NUM_VREG];
-    bool initialized;
-    bool avs_enabled;
+	const phys_addr_t hfpll_phys_base;
+	void __iomem *hfpll_base;
+	const phys_addr_t aux_clk_sel_phys;
+	const u32 aux_clk_sel;
+	const u32 sec_clk_sel;
+	const u32 l2cpmr_iaddr;
+	const struct core_speed *cur_speed;
+	unsigned int l2_vote;
+	struct vreg vreg[NUM_VREG];
+	bool initialized;
+	bool avs_enabled;
 };
 
 /**
@@ -232,9 +232,9 @@ struct scalable {
  * @boost_uv: Voltage boost amount
  */
 struct pvs_table {
-    struct acpu_level *table;
-    size_t size;
-    int boost_uv;
+	struct acpu_level *table;
+	size_t size;
+	int boost_uv;
 };
 
 /**
@@ -250,15 +250,15 @@ struct pvs_table {
  * @stby_khz: KHz value corresponding to an always-on clock source.
  */
 struct acpuclk_krait_params {
-    struct scalable *scalable;
-    size_t scalable_size;
-    struct hfpll_data *hfpll_data;
-    struct pvs_table (*pvs_tables)[NUM_PVS];
-    struct l2_level *l2_freq_tbl;
-    size_t l2_freq_tbl_size;
-    phys_addr_t pte_efuse_phys;
-    struct msm_bus_scale_pdata *bus_scale;
-    unsigned long stby_khz;
+	struct scalable *scalable;
+	size_t scalable_size;
+	struct hfpll_data *hfpll_data;
+	struct pvs_table (*pvs_tables)[NUM_PVS];
+	struct l2_level *l2_freq_tbl;
+	size_t l2_freq_tbl_size;
+	phys_addr_t pte_efuse_phys;
+	struct msm_bus_scale_pdata *bus_scale;
+	unsigned long stby_khz;
 };
 
 /**
@@ -266,12 +266,12 @@ struct acpuclk_krait_params {
  * @uses_pm8917: Boolean indicates presence of pm8917.
  */
 struct acpuclk_platform_data {
-    bool uses_pm8917;
+	bool uses_pm8917;
 };
 
 /**
  * acpuclk_krait_init - Initialize the Krait CPU clock driver give SoC params.
  */
 extern int acpuclk_krait_init(struct device *dev,
-	          const struct acpuclk_krait_params *params);
+			      const struct acpuclk_krait_params *params);
 #endif
