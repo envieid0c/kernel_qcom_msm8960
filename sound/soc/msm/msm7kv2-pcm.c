@@ -576,6 +576,7 @@ static int msm_pcm_capture_close(struct snd_pcm_substream *substream)
 	msm_adsp_put(prtd->audrec);
 	kfree(prtd);
 	runtime->private_data = NULL;
+
 	return 0;
 }
 

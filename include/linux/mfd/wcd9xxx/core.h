@@ -129,6 +129,7 @@ struct wcd9xxx {
 	struct mutex io_lock;
 	struct mutex xfer_lock;
 	struct mutex irq_lock;
+	struct mutex nested_irq_lock;
 	u8 version;
 
 	unsigned int irq_base;
@@ -161,9 +162,6 @@ struct wcd9xxx {
 };
 
 int wcd9xxx_reg_read(struct wcd9xxx *wcd9xxx, unsigned short reg);
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-int wcd9xxx_reg_read_safe(struct wcd9xxx *wcd9xxx, unsigned short reg);
-#endif
 int wcd9xxx_reg_write(struct wcd9xxx *wcd9xxx, unsigned short reg,
 		u8 val);
 int wcd9xxx_interface_reg_read(struct wcd9xxx *wcd9xxx, unsigned short reg);
@@ -180,6 +178,8 @@ int wcd9xxx_get_intf_type(void);
 
 bool wcd9xxx_lock_sleep(struct wcd9xxx *wcd9xxx);
 void wcd9xxx_unlock_sleep(struct wcd9xxx *wcd9xxx);
+void wcd9xxx_nested_irq_lock(struct wcd9xxx *wcd9xxx);
+void wcd9xxx_nested_irq_unlock(struct wcd9xxx *wcd9xxx);
 enum wcd9xxx_pm_state wcd9xxx_pm_cmpxchg(struct wcd9xxx *wcd9xxx,
 				enum wcd9xxx_pm_state o,
 				enum wcd9xxx_pm_state n);

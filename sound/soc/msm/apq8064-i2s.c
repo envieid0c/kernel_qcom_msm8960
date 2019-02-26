@@ -2741,7 +2741,7 @@ static int __init msm_audio_init(void)
 	int ret;
 	u32	version = socinfo_get_platform_version();
 	if (!machine_is_apq8064_mtp() ||
-		(SOCINFO_VERSION_MINOR(version) != 1)) {
+	(SOCINFO_VERSION_MINOR(version) != 1)) {
 		pr_info("%s: Not APQ8064 in I2S mode\n", __func__);
 		return -ENODEV;
 	}

@@ -5,7 +5,7 @@
  *
  * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
  *         Liam Girdwood <lrg@slimlogic.co.uk>
- *
+ *         
  *
  *  This program is free software; you can redistribute  it and/or modify it
  *  under  the terms of  the GNU General  Public License as published by the
@@ -97,9 +97,6 @@ static struct snd_soc_dai_driver dummy_dai = {
 static __devinit int snd_soc_dummy_probe(struct platform_device *pdev)
 {
 	int ret;
-
-	memset(&dummy_codec, 0,
-		sizeof(struct snd_soc_codec_driver));
 
 	ret = snd_soc_register_codec(&pdev->dev, &dummy_codec, &dummy_dai, 1);
 	if (ret < 0)
