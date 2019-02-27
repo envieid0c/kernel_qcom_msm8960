@@ -390,7 +390,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
 		   -funsafe-math-optimizations \
-		    $(KERNEK_MODS) $(GCC5)
+		    $(KERNEK_MODS) $(GCC5) \
+		   -Wno-error=maybe-uninitialized -Wno-bool-compare -Wno-misleading-indentation \
+               -Wno-format -Wno-logical-not-parentheses -Wno-int-in-bool-context -Wno-memset-elt-size \
+                    -Wno-parentheses -Wno-bool-operation -Wno-duplicate-decl-specifier -Wno-stringop-overflow \
+		    -Wno-format-truncation -Wno-format-overflow -fno-modulo-sched -Wno-error=switch-unreachable \
+		    -Wno-switch-unreachable
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
