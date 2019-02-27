@@ -184,6 +184,36 @@ static int vmap_page_range(unsigned long start, unsigned long end,
 	return ret;
 }
 
+#ifdef ENABLE_VMALLOC_SAVING
+int is_vmalloc_addr(const void *x)
+{
+	struct rb_node *n;
+	struct vmap_area *va;
+	int ret = 0;
+
+	spin_lock(&vmap_area_lock);
+
+	for (n = rb_first(vmap_area_root); n; rb_next(n)) {
+		va = rb_entry(n, struct vmap_area, rb_node);
+		if (x >= va->va_start && x < va->va_end) {
+			ret = 1;
+			break;
+		}
+	}
+
+	spin_unlock(&vmap_area_lock);
+	return ret;
+}
+#else
+int is_vmalloc_addr(const void *x)
+{
+	unsigned long addr = (unsigned long)x;
+
+	return addr >= VMALLOC_START && addr < VMALLOC_END;
+}
+#endif
+EXPORT_SYMBOL(is_vmalloc_addr);
+
 int is_vmalloc_or_module_addr(const void *x)
 {
 	/*
@@ -271,45 +301,6 @@ static unsigned long cached_vstart;
 static unsigned long cached_align;
 
 static unsigned long vmap_area_pcpu_hole;
-
-#ifdef CONFIG_ENABLE_VMALLOC_SAVING
-int is_vmalloc_addr(const void *x)
-{
-	struct vmap_area *va;
-	int ret = 0;
-
-	spin_lock(&vmap_area_lock);
-	list_for_each_entry(va, &vmap_area_list, list) {
-		if (va->flags & (VM_LAZY_FREE | VM_LAZY_FREEING))
-			continue;
-
-		if (!(va->flags & VM_VM_AREA))
-			continue;
-
-		if (va->vm == NULL)
-			continue;
-
-		if (va->vm->flags & VM_LOWMEM)
-			continue;
-
-		if ((unsigned long)x >= va->va_start &&
-		    (unsigned long)x < va->va_end) {
-			ret = 1;
-			break;
-		}
-	}
-	spin_unlock(&vmap_area_lock);
-	return ret;
-}
-#else
-int is_vmalloc_addr(const void *x)
-{
-	unsigned long addr = (unsigned long)x;
-
-	return addr >= VMALLOC_START && addr < VMALLOC_END;
-}
-#endif
-EXPORT_SYMBOL(is_vmalloc_addr);
 
 static struct vmap_area *__find_vmap_area(unsigned long addr)
 {
@@ -787,6 +778,7 @@ struct vmap_block_queue {
 struct vmap_block {
 	spinlock_t lock;
 	struct vmap_area *va;
+	struct vmap_block_queue *vbq;
 	unsigned long free, dirty;
 	DECLARE_BITMAP(alloc_map, VMAP_BBMAP_BITS);
 	DECLARE_BITMAP(dirty_map, VMAP_BBMAP_BITS);
@@ -866,6 +858,7 @@ static struct vmap_block *new_vmap_block(gfp_t gfp_mask)
 	radix_tree_preload_end();
 
 	vbq = &get_cpu_var(vmap_block_queue);
+	vb->vbq = vbq;
 	spin_lock(&vbq->lock);
 	list_add_rcu(&vb->free_list, &vbq->free);
 	spin_unlock(&vbq->lock);

@@ -19,17 +19,14 @@
 #include <linux/swapops.h>
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
+<<<<<<< HEAD
 #include <linux/ratelimit.h>
 #ifdef CONFIG_FRONTSWAP
 #include <linux/frontswap.h>
 #endif
+=======
+>>>>>>> parent of c8fb86a7f09... Full swam & vmalloc
 #include <asm/pgtable.h>
-
-/*
- * We don't need to see swap errors more than once every 1 second to know
- * that a problem is occurring.
- */
-#define SWAP_ERROR_LOG_RATE_MS 1000
 
 static struct bio *get_swap_bio(gfp_t gfp_flags,
 				struct page *page, bio_end_io_t end_io)
@@ -55,7 +52,6 @@ void end_swap_bio_write(struct bio *bio, int err)
 {
 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
 	struct page *page = bio->bi_io_vec[0].bv_page;
-	static unsigned long swap_error_rs_time;
 
 	if (!uptodate) {
 		SetPageError(page);
@@ -68,9 +64,7 @@ void end_swap_bio_write(struct bio *bio, int err)
 		 * Also clear PG_reclaim to avoid rotate_reclaimable_page()
 		 */
 		set_page_dirty(page);
-		if (printk_timed_ratelimit(&swap_error_rs_time,
-					   SWAP_ERROR_LOG_RATE_MS))
-			printk(KERN_ALERT "Write-error on swap-device (%u:%u:%Lu)\n",
+		printk(KERN_ALERT "Write-error on swap-device (%u:%u:%Lu)\n",
 				imajor(bio->bi_bdev->bd_inode),
 				iminor(bio->bi_bdev->bd_inode),
 				(unsigned long long)bio->bi_sector);
