@@ -17,6 +17,8 @@
 #include <linux/types.h>
 #include <trace/events/power.h>
 #include <linux/moduleparam.h>
+#include <linux/types.h>
+#include <trace/events/power.h>
 
 #include "power.h"
 
