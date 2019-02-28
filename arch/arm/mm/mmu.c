@@ -1419,8 +1419,10 @@ static void __init map_lowmem(void)
 	map.type = MT_MEMORY;
 
 	create_mapping(&map, true);
-	reserve_virtual_lowmem(start, end);
+//	reserve_virtual_lowmem(start, end);
 #endif
+
+	reserve_virtual_lowmem(start, end);
 
 	vm = early_alloc_aligned(sizeof(*vm) * nr, __alignof__(*vm));
 

@@ -94,27 +94,20 @@
 #define TASK_SIZE		(CONFIG_DRAM_SIZE)
 #endif
 
-#ifndef TASK_UNMAPPED_BASE
-#define TASK_UNMAPPED_BASE	UL(0x00000000)
-#endif
-
-#ifndef PHYS_OFFSET
-#define PHYS_OFFSET 		UL(CONFIG_DRAM_BASE)
-#endif
 
 #ifndef END_MEM
 #define END_MEM			(UL(CONFIG_DRAM_BASE) + CONFIG_DRAM_SIZE)
 #endif
 
 #ifndef PAGE_OFFSET
-#define PAGE_OFFSET		(PHYS_OFFSET)
+#define PAGE_OFFSET		PLAT_PHYS_OFFSET
 #endif
 
 /*
  * The module can be at any place in ram in nommu mode.
  */
 #define MODULES_END		(END_MEM)
-#define MODULES_VADDR		(PHYS_OFFSET)
+#define MODULES_VADDR		PAGE_OFFSET
 
 #define XIP_VIRT_ADDR(physaddr)  (physaddr)
 
@@ -141,6 +134,15 @@
 #define page_to_phys(page)	(__pfn_to_phys(page_to_pfn(page)))
 #define phys_to_page(phys)	(pfn_to_page(__phys_to_pfn(phys)))
 
+/*
+ * PLAT_PHYS_OFFSET is the offset (from zero) of the start of physical
+ * memory.  This is used for XIP and NoMMU kernels, or by kernels which
+ * have their own mach/memory.h.  Assembly code must always use
+ * PLAT_PHYS_OFFSET and not PHYS_OFFSET.
+ */
+#ifndef PLAT_PHYS_OFFSET
+#define PLAT_PHYS_OFFSET	UL(CONFIG_PHYS_OFFSET)
+#endif
 #ifndef __ASSEMBLY__
 
 /*
@@ -168,7 +170,7 @@ extern unsigned long __pv_phys_offset;
 	"	.popsection\n"				\
 	: "=r" (to)					\
 	: "r" (from), "I" (type))
-
+/*
 static inline phys_addr_t __virt_to_phys(unsigned long x)
 {
 	unsigned long t;
@@ -182,7 +184,14 @@ static inline unsigned long __phys_to_virt(phys_addr_t x)
 	__pv_stub(x, t, "sub", __PV_BITS_31_24);
 	return t;
 }
+*/
+#ifndef PLAT_PHYS_OFFSET
+#define PLAT_PHYS_OFFSET	UL(CONFIG_PHYS_OFFSET)
+#endif
+
 #else
+
+#define PHYS_OFFSET	PLAT_PHYS_OFFSET
 
 static inline phys_addr_t __virt_to_phys(unsigned long x)
 {
@@ -194,14 +203,6 @@ static inline unsigned long __phys_to_virt(phys_addr_t x)
 	return x - PHYS_OFFSET + PAGE_OFFSET;
 }
 
-#endif
-#endif
-
-#ifndef PHYS_OFFSET
-#ifdef PLAT_PHYS_OFFSET
-#define PHYS_OFFSET	PLAT_PHYS_OFFSET
-#else
-#define PHYS_OFFSET	UL(CONFIG_PHYS_OFFSET)
 #endif
 #endif
 
