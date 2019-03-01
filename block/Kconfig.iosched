@@ -12,15 +12,6 @@ config IOSCHED_NOOP
 	  that do their own scheduling and require only minimal assistance from
 	  the kernel.
 
-config IOSCHED_ANXIETY
-	tristate "Anxiety I/O scheduler"
-	default y
-	---help---
-	  The Anxiety I/O scheduler prioritizes latency over everything
-	  else. It uses a simple algorithm that selects from FIFO queues
-	  implemented as doubly linked lists and prioritizes reads over
-	  writes.
-
 config IOSCHED_DEADLINE
 	tristate "Deadline I/O scheduler"
 	default y
@@ -166,9 +157,6 @@ choice
 		  any workload. It also tries to guarantee low latency to
 		  interactive and soft real-time applications.
 
-	config DEFAULT_ANXIETY
-	bool "Anxiety" if IOSCHED_ANXIETY=y
-
 	config DEFAULT_MAPLE
 		bool "Maple" if IOSCHED_MAPLE=y
 
@@ -212,7 +200,6 @@ config DEFAULT_IOSCHED
 	default "fiops" if DEFAULT_FIOPS
 	default "vr" if DEFAULT_VR
 	default "zen" if DEFAULT_ZEN
-	default "anxiety" if DEFAULT_ANXIETY
 
 endmenu
 
