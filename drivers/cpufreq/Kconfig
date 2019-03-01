@@ -56,16 +56,6 @@ config CPU_FREQ_DEFAULT_GOV_ALUCARD
     select CPU_FREQ_GOV_ALUCARD
     help
 
-config CPU_FREQ_DEFAULT_GOV_ADAPTIVE
-    bool "adaptive"
-    select CPU_FREQ_GOV_ADAPTIVE
-    help
-      Use the CPUFreq governor 'adaptive' as default. This allows
-      you to get a full dynamic cpu frequency capable system by simply
-      loading your cpufreq low-level hardware driver, using the
-      'adaptive' governor for latency-sensitive workloads and demanding
-      performance.
-
 config CPU_FREQ_DEFAULT_GOV_BIOSHOCK
     bool "bioshock"
     select CPU_FREQ_GOV_BIOSHOCK
@@ -145,16 +135,27 @@ config CPU_FREQ_DEFAULT_GOV_INTERACTIVE
 
 
 config CPU_FREQ_DEFAULT_GOV_INTELLIMM
-        bool "intelliminmax"
-        select CPU_FREQ_GOV_INTELLIMM
-        help
-          Use the CPUFreq governor 'intelliminmax' as default. This is
-          governor will use only 3 different frequencies, idle, UI and max
+	bool "intelliminmax"
+	select CPU_FREQ_GOV_INTELLIMM
+	help
+	  Use the CPUFreq governor 'intelliminmax' as default. This is
+	  governor will use only 3 different frequencies, idle, UI and max
+
+config CPU_FREQ_DEFAULT_GOV_INTELLIACTIVE
+	bool "intelliactive"
+	select CPU_FREQ_GOV_PEGASUSQ
+	help
+	  Use the CPUFreq governor 'intelliactive' as default.
+
+config CPU_FREQ_DEFAULT_GOV_LAGFREE
+    bool "lagfree"
+    select CPU_FREQ_GOV_LAGFREE
+    select CPU_FREQ_GOV_PERFORMANCE
 
 config CPU_FREQ_DEFAULT_GOV_NIGHTMARE
-  bool "nightmare"
-  select CPU_FREQ_GOV_NIGHTMARE
-  help
+	bool "nightmare"
+	select CPU_FREQ_GOV_NIGHTMARE
+	help
 
 config CPU_FREQ_DEFAULT_GOV_ONDEMAND
     bool "ondemand"
@@ -318,47 +319,55 @@ config CPU_FREQ__GOV_HELLSACTIVE
     depends on CPU_FREQ
 
 config CPU_FREQ_GOV_HYPER
-    tristate "'hyper' cpufreq governor"
-    depends on CPU_FREQ
-    help
-      'hyper' - A tweaked "ondemand" based smart and smooth optimized governor!
+	tristate "'hyper' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  'hyper' - A tweaked "ondemand" based smart and smooth optimized governor!
 
-       If in doubt, say N.
+	   If in doubt, say N.
 
 config CPU_FREQ_GOV_IMPULSE
-    tristate "'impulse' cpufreq policy governor"
-    help
-      'impulse' - This driver adds a dynamic cpufreq policy governor
-      designed for optimized balance between power and performance.
+	tristate "'impulse' cpufreq policy governor"
+	help
+	  'impulse' - This driver adds a dynamic cpufreq policy governor
+	  designed for optimized balance between power and performance.
 
-      If in doubt, say N.
+	  If in doubt, say N.
 
 config CPU_FREQ_GOV_INTERACTIVE
-    tristate "'interactive' cpufreq policy governor"
-    help
-      'interactive' - This driver adds a dynamic cpufreq policy governor
-      designed for latency-sensitive workloads.
+	tristate "'interactive' cpufreq policy governor"
+	help
+	 'interactive' - This driver adds a dynamic cpufreq policy governor
+	  designed for latency-sensitive workloads.
 
-      This governor attempts to reduce the latency of clock
-      increases so that the system is more responsive to
-      interactive workloads.
+	  This governor attempts to reduce the latency of clock
+	  increases so that the system is more responsive to
+	  interactive workloads.
 
-      To compile this driver as a module, choose M here: the
-      module will be called cpufreq_interactive.
+	  To compile this driver as a module, choose M here: the
+	  module will be called cpufreq_interactive.
 
-      For details, take a look at linux/Documentation/cpu-freq.
+	  For details, take a look at linux/Documentation/cpu-freq.
 
-      If in doubt, say N.
+	  If in doubt, say N.
+
+config CPU_FREQ_GOV_INTELLIACTIVE
+	tristate "'intelliactive' cpufreq policy governor"
+	depends on CPU_FREQ
+
+config CPU_FREQ_GOV_LAGFREE
+	tristate "'lagfree' cpufreq governor"
+	depends on CPU_FREQ
 
 config CPU_FREQ_GOV_INTELLIMM
-        tristate "'intelliminmax' cpufreq policy governor"
-        help
-          To compile this driver as a module, choose M here: the
-          module will be called cpufreq_interactive.
+	tristate "'intelliminmax' cpufreq policy governor"
+	help
+	  To compile this driver as a module, choose M here: the
+	  module will be called cpufreq_interactive.
 
-          For details, take a look at linux/Documentation/cpu-freq.
+	  For details, take a look at linux/Documentation/cpu-freq.
 
-          If in doubt, say N.
+	  If in doubt, say N.
 
 config CPU_FREQ_GOV_NIGHTMARE
 	tristate "'nightmare' cpufreq governor"
@@ -405,86 +414,86 @@ config CPU_FREQ_GOV_SMARTASSV2
 	  If in doubt, say N.
 
 config SMARTASSV2_SLEEP_IDEAL_FREQ
-    int "The ideal frequency to use when awake."
-    default 1190400
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      The "ideal" frequency to use when awake. The governor will ramp up faster
-      towards the ideal frequency and slower after it has passed it. Similarly,
-      lowering the frequency towards the ideal frequency is faster than below it.
+	int "The ideal frequency to use when awake."
+	default 1190400
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  The "ideal" frequency to use when awake. The governor will ramp up faster
+	  towards the ideal frequency and slower after it has passed it. Similarly,
+	  lowering the frequency towards the ideal frequency is faster than below it.
 
 config SMARTASSV2_AWAKE_IDEAL_FREQ
-    int "The ideal frequency to use when suspended."
-    default 300000
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      The "ideal" frequency to use when suspended.
-      When set to 0, the governor will not track the suspended state (meaning
-      that practically when sleep_ideal_freq==0 the awake_ideal_freq is used
-      also when suspended).
+	int "The ideal frequency to use when suspended."
+	default 300000
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  The "ideal" frequency to use when suspended.
+	  When set to 0, the governor will not track the suspended state (meaning
+	  that practically when sleep_ideal_freq==0 the awake_ideal_freq is used
+	  also when suspended).
 
 config SMARTASSV2_RAMP_UP_STEP
-    int "Freqeuncy delta when ramping up above the ideal freqeuncy."
-    default 256000
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      Freqeuncy delta when ramping up above the ideal freqeuncy.
-      Zero disables and causes to always jump straight to max frequency.
-      When below the ideal freqeuncy we always ramp up to the ideal freq.
+	int "Freqeuncy delta when ramping up above the ideal freqeuncy."
+	default 256000
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  Freqeuncy delta when ramping up above the ideal freqeuncy.
+	  Zero disables and causes to always jump straight to max frequency.
+	  When below the ideal freqeuncy we always ramp up to the ideal freq.
 
 config SMARTASSV2_RAMP_DOWN_STEP
-    int "Freqeuncy delta when ramping down below the ideal freqeuncy."
-    default 256000
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      Freqeuncy delta when ramping down below the ideal freqeuncy.
-      Zero disables and will calculate ramp down according to load heuristic.
-      When above the ideal freqeuncy we always ramp down to the ideal freq.
+	int "Freqeuncy delta when ramping down below the ideal freqeuncy."
+	default 256000
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  Freqeuncy delta when ramping down below the ideal freqeuncy.
+	  Zero disables and will calculate ramp down according to load heuristic.
+	  When above the ideal freqeuncy we always ramp down to the ideal freq.
 
 config SMARTASSV2_MAX_CPU_LOAD
-    int "CPU freq will be increased if measured load > max_cpu_load."
-    default 50
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      CPU freq will be increased if measured load > max_cpu_load.
+	int "CPU freq will be increased if measured load > max_cpu_load."
+	default 50
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  CPU freq will be increased if measured load > max_cpu_load.
 
 config SMARTASSV2_MIN_CPU_LOAD
-    int "CPU freq will be decreased if measured load < max_cpu_load."
-    default 25
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      CPU freq will be decreased if measured load < max_cpu_load.
+	int "CPU freq will be decreased if measured load < max_cpu_load."
+	default 25
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  CPU freq will be decreased if measured load < max_cpu_load.
 
 config SMARTASSV2_UP_RATE_US
-    int "The minimum amount of time to spend at a frequency before we can ramp up."
-    default 48000
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      The minimum amount of time to spend at a frequency before we can ramp up.
-      Notice we ignore this when we are below the ideal frequency.
+	int "The minimum amount of time to spend at a frequency before we can ramp up."
+	default 48000
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  The minimum amount of time to spend at a frequency before we can ramp up.
+	  Notice we ignore this when we are below the ideal frequency.
 
 config SMARTASSV2_DOWN_RATE_US
-    int "The minimum amount of time to spend at a frequency before we can ramp down."
-    default 99000
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      The minimum amount of time to spend at a frequency before we can ramp down.
-      Notice we ignore this when we are below the ideal frequency.
+	int "The minimum amount of time to spend at a frequency before we can ramp down."
+	default 99000
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  The minimum amount of time to spend at a frequency before we can ramp down.
+	  Notice we ignore this when we are below the ideal frequency.
 
 config SMARTASSV2_SLEEP_WAKEUP_FREQ
-    int "The frequency to set when waking up from sleep."
-    default 99999999
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      The frequency to set when waking up from sleep.
-      When sleep_ideal_freq=0 this will have no effect.
+	int "The frequency to set when waking up from sleep."
+	default 99999999
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  The frequency to set when waking up from sleep.
+	  When sleep_ideal_freq=0 this will have no effect.
 
 config SMARTASSV2_SAMPLE_RATE_JIFFIES
-    int "Sampling rate."
-    default 2
-    depends on CPU_FREQ_GOV_SMARTASSV2
-    help
-      Sampling rate, I highly recommend to leave it at 2.
+	int "Sampling rate."
+	default 2
+	depends on CPU_FREQ_GOV_SMARTASSV2
+	help
+	  Sampling rate, I highly recommend to leave it at 2.
 ##################################################
 
 config CPU_FREQ_GOV_SMARTMAX
@@ -494,49 +503,49 @@ config CPU_FREQ_GOV_SMARTMAX
 	  'smartmax' combined ondemand and smartass2
 
 config INTELLI_MAX_ACTIVE_FREQ
-    int "Max Active Freq for Intellidemand"
-    depends on CPU_FREQ_GOV_INTELLIDEMAND
-    default	1512000
-    help
-      Set default max active frequency for intellidemand
+	int "Max Active Freq for Intellidemand"
+	depends on CPU_FREQ_GOV_INTELLIDEMAND
+	default	1512000
+	help
+	  Set default max active frequency for intellidemand
 
 config INTELLI_MAX_INACTIVE_FREQ
-    int "Max Inactive Freq for Intellidemand"
-    depends on CPU_FREQ_GOV_INTELLIDEMAND
-    default	1134000
-    help
-      Set default max inactive frequency for intellidemand
+	int "Max Inactive Freq for Intellidemand"
+	depends on CPU_FREQ_GOV_INTELLIDEMAND
+	default	1134000
+	help
+	  Set default max inactive frequency for intellidemand
 
 config CPUFREQ_LIMIT_MAX_FREQ
-    bool "Limit Max Freq"
-    depends on CPU_FREQ_GOV_INTELLIDEMAND
-    help
-      Limit Max Freq while screen is on for Intellidemand governor
+	bool "Limit Max Freq"
+	depends on CPU_FREQ_GOV_INTELLIDEMAND
+	help
+	  Limit Max Freq while screen is on for Intellidemand governor
 
 config CPUFREQ_ID_PERFLOCK
-    bool "Intellidemand Performance Lock"
-    depends on CPU_FREQ_GOV_INTELLIDEMAND
-    default n
-    help
-      Minimum CPU performance lock for Intellidemand governor
+	bool "Intellidemand Performance Lock"
+	depends on CPU_FREQ_GOV_INTELLIDEMAND
+	default n
+	help
+	  Minimum CPU performance lock for Intellidemand governor
 
 config CPU_FREQ_GOV_ONDEMAND
-    tristate "'ondemand' cpufreq policy governor"
-    select CPU_FREQ_TABLE
-    help
-      'ondemand' - This driver adds a dynamic cpufreq policy governor.
-      The governor does a periodic polling and 
-      changes frequency based on the CPU utilization.
-      The support for this governor depends on CPU capability to
-      do fast frequency switching (i.e, very low latency frequency
-      transitions).
+	tristate "'ondemand' cpufreq policy governor"
+	select CPU_FREQ_TABLE
+	help
+	  'ondemand' - This driver adds a dynamic cpufreq policy governor.
+	  The governor does a periodic polling and 
+	  changes frequency based on the CPU utilization.
+	  The support for this governor depends on CPU capability to
+	  do fast frequency switching (i.e, very low latency frequency
+	  transitions).
 
-      To compile this driver as a module, choose M here: the
-      module will be called cpufreq_ondemand.
+	  To compile this driver as a module, choose M here: the
+	  module will be called cpufreq_ondemand.
 
-      For details, take a look at linux/Documentation/cpu-freq.
+	  For details, take a look at linux/Documentation/cpu-freq.
 
-      If in doubt, say N.
+	  If in doubt, say N.
 
 config CPU_FREQ_GOV_PERFORMANCE
     tristate "'performance' governor"

@@ -16,7 +16,7 @@ This kernel feature is :
 - Kernel Asynchronous I/O is used iov_iter interface
 - Battery Life eXtender (BLX)
 - CPU Governor's
-: Alucard, BioShock, Blu Active, Conservative, Dancedance, Darkness, Dynamic Interactive, Hyper, IntelliMM, Interactive, Nigthmare, Pegasus, Perfomance, Powersave, Skuractive, SmartassV2, TripDroid, Userspace & Wheatley
+: Alucard, BioShock, Blu Active, Conservative, Dancedance, Darkness, Dynamic Interactive, Hyper, IntelliMM, Interactive, Intelliactive, Lagfree, Nigthmare, Pegasus, Perfomance, Powersave, Skuractive, SmartassV2, TripDroid, Userspace & Wheatley
 -  I/O Sched Governor's
 : bfq, cfq, deadline, fifo, fiops, maple, noop, tripdroidzen, vr & zen
 - CPU Frequency 94Mhz-1512Mhz
