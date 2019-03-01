@@ -23,7 +23,14 @@
 #include <linux/sched.h>
 #include <linux/cpufreq.h>
 #include <linux/module.h>
+
+#ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
+#endif
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 
 #define FAST_HOTPLUG_ENABLED	0
 
@@ -177,8 +184,13 @@ static unsigned int *plug_out_delay[] = {
 extern unsigned long avg_nr_running(void);
 extern unsigned long avg_cpu_nr_running(unsigned int cpu);
 
-
+#ifdef CONFIG_POWERSUSPEND
 static struct power_suspend hotplug_power_suspend_handler;
+#endif  /* CONFIG_POWERSUSPEND */
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static struct early_suspend hotplug_early_suspend_handler;
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
+
 static void plug_in(int online_cpu_count);
 
 static int get_slowest_cpu(void){
@@ -253,7 +265,7 @@ static void hotplug(struct work_struct *work){
 #ifdef DEBUG_ENABLED
     pr_info(HOTPLUG_INFO_TAG"The load is %lu, we have %d cpu online and the in threshold is : %lu. The delay is %d, out : %lu, %d and singlecore : %d", load, online_cpu_count, *plug_in_threshold[online_cpu_count], *plug_in_delay[online_cpu_count], *plug_out_threshold[online_cpu_count - 1], *plug_out_delay[online_cpu_count - 1], singlecore);
 #endif
-    
+
     // If boosted, we don't hesitate to plug in cores if there is some load
     if(is_boosted && load > threshold_to_boost && singlecore){
 	plug_in(online_cpu_count);
@@ -429,8 +441,7 @@ static int __ref enable_fast_hotplug(const char *val, const struct kernel_param 
 /*
  * Suspend / Resume
  */
-
-
+#if defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 static void hotplug_power_suspend(struct power_suspend *h) {
     int cpu;
     if(fast_hotplug_enabled && screen_off_singlecore){
@@ -452,7 +463,8 @@ static void hotplug_power_suspend(struct power_suspend *h) {
 	mutex_unlock(&mutex);
     }
 }
-
+#endif
+#if defined (CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
 static void hotplug_late_resume(struct power_suspend *h) {
     if(fast_hotplug_enabled){
 #ifdef DEBUG_ENABLED
@@ -467,11 +479,22 @@ static void hotplug_late_resume(struct power_suspend *h) {
 	mutex_unlock(&mutex);
     }
 }
+#endif
 
+#ifdef CONFIG_POWERSUSPEND
 static struct power_suspend hotplug_power_suspend_handler = {
     .suspend = hotplug_power_suspend,
     .resume = hotplug_late_resume,
 };
+#endif  /* CONFIG_POWERSUSPEND */
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static struct early_suspend hotplug_power_suspend_handler = {
+    .suspend = hotplug_power_suspend,
+    .resume = hotplug_late_resume,
+};
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
+
 /*
  * Initialization of the module
  */
@@ -485,10 +508,14 @@ static int __init hotplug_init(void)
 
     INIT_DELAYED_WORK(&hotplug_work, hotplug);
 
-/*PLEASE FIX
+#ifdef CONFIG_POWERSUSPEND
     register_power_suspend(&hotplug_power_suspend_handler);
-*/
-    //queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
+#endif
+#ifdef CONFIG_HAS_EARLYSUSPEND
+    register_early_suspend(&hotplug_early_suspend_handler);
+#endif
+
+    queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
 
     pr_info(HOTPLUG_INFO_TAG"Fast hotplug succesfully initialized !");
     return 0;

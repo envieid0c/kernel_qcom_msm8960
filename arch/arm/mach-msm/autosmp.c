@@ -130,8 +130,10 @@ static void asmp_work_fn(struct work_struct *work) {
 
     queue_delayed_work(asmp_workq, &asmp_work, delay_jif);
 }
-
+#ifdef CONFIG_POWERSUSPEND
 static void asmp_power_suspend(struct power_suspend *h) {
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void asmp_early_suspend(struct early_suspend *h) {
     unsigned int cpu;
 
     /* unplug online cpu cores */
@@ -146,8 +148,13 @@ static void asmp_power_suspend(struct power_suspend *h) {
 
     pr_info(ASMP_TAG"suspended\n");
 }
+#endif /* CONFIG_POWERSUSPEND */
+#endif /* CONFIG_HAS_EARLYSUSPEND */
 
+#ifdef CONFIG_POWERSUSPEND
 static void asmp_late_resume(struct power_suspend *h) {
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void asmp_late_resume(struct early_suspend *h) {
     unsigned int cpu;
 
     /* hotplug offline cpu cores */
@@ -165,12 +172,24 @@ static void asmp_late_resume(struct power_suspend *h) {
 
     pr_info(ASMP_TAG"resumed\n");
 }
+#endif  /* CONFIG_POWERSUSPEND */
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
+#ifdef CONFIG_POWERSUSPEND
 static struct power_suspend __refdata asmp_power_suspend_handler = {
     .level = POWER_SUSPEND_LEVEL_BLANK_SCREEN,
     .suspend = asmp_power_suspend,
     .resume = asmp_late_resume,
 };
+#endif  /* CONFIG_POWERSUSPEND */
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static struct early_suspend __refdata asmp_early_suspend_handler = {
+    .level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
+    .suspend = asmp_early_suspend,
+    .resume = asmp_late_resume,
+};
+#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 static int set_enabled(const char *val, const struct kernel_param *kp) {
     int ret;
@@ -308,8 +327,11 @@ static int __init asmp_init(void) {
 	queue_delayed_work(asmp_workq, &asmp_work,
 		   msecs_to_jiffies(ASMP_STARTDELAY));
 
+#ifdef CONFIG_POWERSUSPEND
+    register_power_suspend(&asmp_power_suspend_handler);
+#endif
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-    register_early_suspend(&asmp_power_suspend_handler);
+    register_early_suspend(&asmp_power_early_handler);
 #endif
 
     asmp_kobject = kobject_create_and_add("autosmp", kernel_kobj);
