@@ -132,6 +132,22 @@ static void asmp_work_fn(struct work_struct *work) {
 }
 #ifdef CONFIG_POWERSUSPEND
 static void asmp_power_suspend(struct power_suspend *h) {
+    unsigned int cpu;
+
+    /* unplug online cpu cores */
+    if (asmp_param.scroff_single_core)
+	for_each_present_cpu(cpu)
+	    if (cpu && cpu_online(cpu))
+		cpu_down(cpu);
+
+    /* suspend main work thread */
+    if (enabled)
+	cancel_delayed_work_sync(&asmp_work);
+
+    pr_info(ASMP_TAG"suspended\n");
+}
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void asmp_early_suspend(struct early_suspend *h) {
     unsigned int cpu;
@@ -148,32 +164,50 @@ static void asmp_early_suspend(struct early_suspend *h) {
 
     pr_info(ASMP_TAG"suspended\n");
 }
-#endif /* CONFIG_POWERSUSPEND */
-#endif /* CONFIG_HAS_EARLYSUSPEND */
+#endif
+
 
 #ifdef CONFIG_POWERSUSPEND
 static void asmp_late_resume(struct power_suspend *h) {
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void asmp_late_resume(struct early_suspend *h) {
-    unsigned int cpu;
+	unsigned int cpu;
 
-    /* hotplug offline cpu cores */
-    if (asmp_param.scroff_single_core)
-	for_each_present_cpu(cpu) {
-	    if (num_online_cpus() >= asmp_param.max_cpus)
-		break;
-	    if (!cpu_online(cpu))
-		cpu_up(cpu);
+	/* hotplug offline cpu cores */
+	if (asmp_param.scroff_single_core)
+		for_each_present_cpu(cpu) {
+		if (num_online_cpus() >= asmp_param.max_cpus)
+			break;
+		if (!cpu_online(cpu))
+			cpu_up(cpu);
 	}
-    /* resume main work thread */
-    if (enabled)
-	queue_delayed_work(asmp_workq, &asmp_work,
-		msecs_to_jiffies(asmp_param.delay));
+	/* resume main work thread */
+	if (enabled)
+		queue_delayed_work(asmp_workq, &asmp_work,
+			msecs_to_jiffies(asmp_param.delay));
 
     pr_info(ASMP_TAG"resumed\n");
 }
-#endif  /* CONFIG_POWERSUSPEND */
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
+#endif
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void asmp_late_resume(struct early_suspend *h) {
+	unsigned int cpu;
+
+	/* hotplug offline cpu cores */
+	if (asmp_param.scroff_single_core)
+		for_each_present_cpu(cpu) {
+		if (num_online_cpus() >= asmp_param.max_cpus)
+			break;
+		if (!cpu_online(cpu))
+			cpu_up(cpu);
+	}
+	/* resume main work thread */
+	if (enabled)
+		queue_delayed_work(asmp_workq, &asmp_work,
+			msecs_to_jiffies(asmp_param.delay));
+
+    pr_info(ASMP_TAG"resumed\n");
+}
+#endif
 
 #ifdef CONFIG_POWERSUSPEND
 static struct power_suspend __refdata asmp_power_suspend_handler = {
@@ -330,7 +364,7 @@ static int __init asmp_init(void) {
 #ifdef CONFIG_POWERSUSPEND
     register_power_suspend(&asmp_power_suspend_handler);
 #endif
-#if defined(CONFIG_HAS_EARLYSUSPEND)
+#ifdef CONFIG_HAS_EARLYSUSPEND
     register_early_suspend(&asmp_power_early_handler);
 #endif
 

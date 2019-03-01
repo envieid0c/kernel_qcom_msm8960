@@ -14,6 +14,8 @@ This kernel feature is :
 - Added Double Tap 2 Wake Feature (in developing)
 - ZRAM + ZSWAP + FRONTSWAP + VMALLOC SAVING
 - Kernel Asynchronous I/O is used iov_iter interface
+- Power Suspend Mode
+: AutoSleep, UserSpace, LCD Panel, Hybrid
 - Battery Life eXtender (BLX)
 - CPU Governor's
 : Alucard, BioShock, Blu Active, Conservative, Dancedance, Darkness, Dynamic Interactive, Hyper, IntelliMM, Interactive, Intelliactive, Lagfree, Nigthmare, Pegasus, Perfomance, Powersave, Skuractive, SmartassV2, TripDroid, Userspace & Wheatley
