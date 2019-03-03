@@ -34,8 +34,8 @@
 #include <linux/workqueue.h>
 #include <linux/sched.h>
 
-#ifdef CONFIG_POWERSUSPEND
-#include <linux/powersuspend.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
 #endif
 
 /*
@@ -77,7 +77,7 @@ unsigned char flags;
 #define HOTPLUG_DISABLED	(1 << 0)
 #define HOTPLUG_PAUSED		(1 << 1)
 #define BOOSTPULSE_ACTIVE	(1 << 2)
-#define POWERSUSPEND_ACTIVE	(1 << 3)
+#define EARLYSUSPEND_ACTIVE	(1 << 3)
 
 struct delayed_work hotplug_decision_work;
 struct delayed_work hotplug_unpause_work;
@@ -333,7 +333,7 @@ inline void hotplug_boostpulse(void)
 unsigned int online_cpus;
 online_cpus = num_online_cpus();
 
-    if (unlikely(flags & (POWERSUSPEND_ACTIVE
+    if (unlikely(flags & (EARLYSUSPEND_ACTIVE
 	| HOTPLUG_DISABLED)))
 	return;
 
@@ -364,34 +364,34 @@ online_cpus = num_online_cpus();
     }
 }
 
-#ifdef CONFIG_POWERSUSPEND
-static void auto_hotplug_power_suspend(struct power_suspend *handler)
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void auto_hotplug_early_suspend(struct early_suspend *handler)
 {
-    pr_info("auto_hotplug: power suspend handler\n");
-    flags |= POWERSUSPEND_ACTIVE;
+    pr_info("auto_hotplug: early suspend handler\n");
+    flags |= EARLYSUSPEND_ACTIVE;
 
     /* Cancel all scheduled delayed work to avoid races */
     cancel_delayed_work_sync(&hotplug_offline_work);
     cancel_delayed_work_sync(&hotplug_decision_work);
     if (num_online_cpus() > 1) {
-	pr_info("auto_hotplug: Offlining CPUs for power suspend\n");
+	pr_info("auto_hotplug: Offlining CPUs for early suspend\n");
 	schedule_work_on(0, &hotplug_offline_all_work);
     }
 }
 
-static void auto_hotplug_late_resume(struct power_suspend *handler)
+static void auto_hotplug_late_resume(struct early_suspend *handler)
 {
     pr_info("auto_hotplug: late resume handler\n");
-    flags &= ~POWERSUSPEND_ACTIVE;
+    flags &= ~EARLYSUSPEND_ACTIVE;
 
     schedule_work(&hotplug_online_all_work);
 }
 
-static struct power_suspend auto_hotplug_suspend = {
-    .suspend = auto_hotplug_power_suspend,
+static struct early_suspend auto_hotplug_suspend = {
+    .suspend = auto_hotplug_early_suspend,
     .resume = auto_hotplug_late_resume,
 };
-#endif /* CONFIG_POWERSUSPEND */
+#endif /* CONFIG_HAS_EARLYSUSPEND */
 
 int __init auto_hotplug_init(void)
 {
@@ -414,8 +414,8 @@ max_online_cpus = num_possible_cpus();
     schedule_delayed_work_on(0, &hotplug_decision_work, HZ * 5);
     schedule_delayed_work(&hotplug_unpause_work, HZ * 10);
 
-#ifdef CONFIG_POWERSUSPEND
-    register_power_suspend(&auto_hotplug_suspend);
+#ifdef CONFIG_HAS_EARLYSUSPEND
+    register_early_suspend(&auto_hotplug_suspend);
 #endif
     return 0;
 }

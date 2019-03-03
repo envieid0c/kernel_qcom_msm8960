@@ -30,7 +30,7 @@
 #include <linux/workqueue.h>
 #include <linux/kthread.h>
 #include <linux/mutex.h>
-#include <linux/powersuspend.h>
+#include <linux/earlysuspend.h>
 
 #ifdef CONFIG_TRIPNDROID_FRAMEWORK
 #include <linux/td_framework.h>

@@ -13,7 +13,7 @@
  *
  */
 
-#include <linux/powersuspend.h>
+#include <linux/earlysuspend.h>
 #include <linux/module.h>
 #include <linux/wait.h>
 
@@ -31,7 +31,7 @@ static enum {
 } fb_state;
 
 /* tell userspace to stop drawing, wait for it to stop */
-static void stop_drawing_power_suspend(struct power_suspend *h)
+static void stop_drawing_early_suspend(struct early_suspend *h)
 {
 	int ret;
 	unsigned long irq_flags;
@@ -45,12 +45,12 @@ static void stop_drawing_power_suspend(struct power_suspend *h)
 				 fb_state == FB_STATE_STOPPED_DRAWING,
 				 HZ);
 	if (unlikely(fb_state != FB_STATE_STOPPED_DRAWING))
-		pr_warning("stop_drawing_power_suspend: timeout waiting for "
+		pr_warning("stop_drawing_early_suspend: timeout waiting for "
 			   "userspace to stop drawing\n");
 }
 
 /* tell userspace to start drawing */
-static void start_drawing_late_resume(struct power_suspend *h)
+static void start_drawing_late_resume(struct early_suspend *h)
 {
 	unsigned long irq_flags;
 
@@ -60,9 +60,9 @@ static void start_drawing_late_resume(struct power_suspend *h)
 	wake_up(&fb_state_wq);
 }
 
-static struct power_suspend stop_drawing_power_suspend_desc = {
-	.level = POWER_SUSPEND_LEVEL_STOP_DRAWING,
-	.suspend = stop_drawing_power_suspend,
+static struct early_suspend stop_drawing_early_suspend_desc = {
+	.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING,
+	.suspend = stop_drawing_early_suspend,
 	.resume = start_drawing_late_resume,
 };
 
@@ -166,13 +166,13 @@ static int __init android_power_init(void)
 		return ret;
 	}
 
-	register_power_suspend(&stop_drawing_power_suspend_desc);
+	register_early_suspend(&stop_drawing_early_suspend_desc);
 	return 0;
 }
 
 static void  __exit android_power_exit(void)
 {
-	unregister_power_suspend(&stop_drawing_power_suspend_desc);
+	unregister_early_suspend(&stop_drawing_early_suspend_desc);
 	sysfs_remove_group(power_kobj, &attr_group);
 }
 

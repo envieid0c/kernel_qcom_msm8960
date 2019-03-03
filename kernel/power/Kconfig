@@ -52,15 +52,15 @@ config EARLYSUSPEND
 choice
     prompt "User-space screen access"
     default FB_EARLYSUSPEND if !FRAMEBUFFER_CONSOLE
-    default CONSOLE_POWESUSPEND
-    depends on POWERSUSPEND
+    default CONSOLE_EARLYSUSPEND
+    depends on HAS_EARLYSUSPEND
 
     config NO_USER_SPACE_SCREEN_ACCESS_CONTROL
 	bool "None"
 
-    config CONSOLE_POWERSUSPEND
+    config CONSOLE_EARLYSUSPEND
 	bool "Console switch on early-suspend"
-	depends on POWERSUSPEND && VT
+	depends on HAS_EARLYSUSPEND && VT
 	---help---
 	  Register early suspend handler to perform a console switch to
 	  when user-space should stop drawing to the screen and a switch

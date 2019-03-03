@@ -24,10 +24,10 @@
  */
 
 #include "msm_mpdecision.h"
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
 #include <linux/lcd_notify.h>
 #else
-#include <linux/powersuspend.h>
+#include <linux/earlysuspend.h>
 #endif
 #include <linux/init.h>
 #include <linux/cpufreq.h>
@@ -51,7 +51,7 @@ DEFINE_PER_CPU(struct msm_mpdec_cpudata_t, msm_mpdec_cpudata);
 EXPORT_PER_CPU_SYMBOL_GPL(msm_mpdec_cpudata);
 
 static bool mpdec_suspended = false;
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
 static struct notifier_block msm_mpdec_lcd_notif;
 #endif
 static struct delayed_work msm_mpdec_work;
@@ -592,7 +592,7 @@ static void msm_mpdec_resume(struct work_struct * msm_mpdec_suspend_work) {
 }
 static DECLARE_WORK(msm_mpdec_resume_work, msm_mpdec_resume);
 
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
 static int msm_mpdec_lcd_notifier_callback(struct notifier_block *this,
 		unsigned long event, void *data) {
     pr_debug("%s: event = %lu\n", __func__, event);
@@ -619,21 +619,21 @@ static int msm_mpdec_lcd_notifier_callback(struct notifier_block *this,
     return 0;
 }
 #else
-static void msm_mpdec_power_suspend(struct power_suspend *h) {
+static void msm_mpdec_early_suspend(struct early_suspend *h) {
     mutex_lock(&mpdec_msm_susres_lock);
     schedule_work(&msm_mpdec_suspend_work);
     mutex_unlock(&mpdec_msm_susres_lock);
 }
 
-static void msm_mpdec_late_resume(struct power_suspend *h) {
+static void msm_mpdec_late_resume(struct early_suspend *h) {
     mutex_lock(&mpdec_msm_susres_lock);
     schedule_work(&msm_mpdec_resume_work);
     mutex_unlock(&mpdec_msm_susres_lock);
 }
 
-static struct power_suspend msm_mpdec_power_suspend_handler = {
-    .level = POWER_SUSPEND_LEVEL_BLANK_SCREEN,
-    .suspend = msm_mpdec_power_suspend,
+static struct early_suspend msm_mpdec_early_suspend_handler = {
+    .level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
+    .suspend = msm_mpdec_early_suspend,
     .resume = msm_mpdec_late_resume,
 };
 #endif
@@ -1198,7 +1198,7 @@ static int __init msm_mpdec_init(void) {
     pr_info(MPDEC_TAG"%s init complete.", __func__);
 
 
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
     msm_mpdec_lcd_notif.notifier_call = msm_mpdec_lcd_notifier_callback;
     if (lcd_register_client(&msm_mpdec_lcd_notif) != 0) {
 	pr_err("%s: Failed to register lcd callback\n", __func__);
@@ -1206,7 +1206,7 @@ static int __init msm_mpdec_init(void) {
 	lcd_unregister_client(&msm_mpdec_lcd_notif);
     }
 #else
-    register_power_suspend(&msm_mpdec_power_suspend_handler);
+    register_early_suspend(&msm_mpdec_early_suspend_handler);
 #endif
 
     return err;
@@ -1214,7 +1214,7 @@ static int __init msm_mpdec_init(void) {
 late_initcall(msm_mpdec_init);
 
 void msm_mpdec_exit(void) {
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
     lcd_unregister_client(&msm_mpdec_lcd_notif);
 #endif
 #ifdef CONFIG_MSM_MPDEC_INPUTBOOST_CPUMIN

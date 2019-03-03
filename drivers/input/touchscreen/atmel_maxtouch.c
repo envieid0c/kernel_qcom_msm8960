@@ -1,6 +1,7 @@
 /*
  *  Atmel maXTouch Touchscreen Controller Driver
  *
+ *  
  *  Copyright (C) 2010 Atmel Corporation
  *  Copyright (C) 2010 Ulf Samuelsson (ulf@atmel.com)
  *  Copyright (C) 2009 Raphael Derosso Pereira <raphaelpereira@gmail.com>
@@ -20,6 +21,7 @@
  */
 
 /*
+ * 
  * Driver for Atmel maXTouch family of touch controllers.
  *
  */
@@ -38,10 +40,10 @@
 
 #include <linux/atmel_maxtouch.h>
 
-#if defined(CONFIG_POWERSUSPEND)
-#include <linux/powersuspend.h>
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+#include <linux/earlysuspend.h>
 
-/* Power-suspend level */
+/* Early-suspend level */
 #define MXT_SUSPEND_LEVEL 1
 #endif
 
@@ -168,10 +170,10 @@ struct mxt_data {
 	char                 *messages;
 	int                  msg_buffer_startp, msg_buffer_endp;
         /* Put only non-touch messages to buffer if this is set */
-	char                 nontouch_msg_only;
+	char                 nontouch_msg_only; 
 	struct mutex         msg_mutex;
-#if defined(CONFIG_POWERSUSPEND)
-	struct power_suspend		power_suspend;
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	struct early_suspend		early_suspend;
 #endif
 	u8 t7_data[T7_DATA_SIZE];
 	bool is_suspended;
@@ -1847,24 +1849,24 @@ err_write_block:
 	return error;
 }
 
-#if defined(CONFIG_POWERSUSPEND)
-static void mxt_power_suspend(struct power_suspend *h)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+static void mxt_early_suspend(struct early_suspend *h)
 {
-	struct mxt_data *mxt = container_of(h, struct mxt_data, power_suspend);
+	struct mxt_data *mxt = container_of(h, struct mxt_data, early_suspend);
 
 	mxt_suspend(&mxt->client->dev);
 }
 
-static void mxt_late_resume(struct power_suspend *h)
+static void mxt_late_resume(struct early_suspend *h)
 {
-	struct mxt_data *mxt = container_of(h, struct mxt_data, power_suspend);
+	struct mxt_data *mxt = container_of(h, struct mxt_data, early_suspend);
 
 	mxt_resume(&mxt->client->dev);
 }
 #endif
 
 static const struct dev_pm_ops mxt_pm_ops = {
-#ifndef CONFIG_POWERSUSPEND
+#ifndef CONFIG_HAS_EARLYSUSPEND
 	.suspend	= mxt_suspend,
 	.resume		= mxt_resume,
 #endif
@@ -2192,12 +2194,12 @@ static int __devinit mxt_probe(struct i2c_client *client,
 	kfree(id_data);
 
 	device_init_wakeup(&client->dev, pdata->wakeup);
-#if defined(CONFIG_POWERSUSPEND)
-	mxt->power_suspend.level = POWER_SUSPEND_LEVEL_BLANK_SCREEN +
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	mxt->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN +
 						MXT_SUSPEND_LEVEL;
-	mxt->power_suspend.suspend = mxt_power_suspend;
-	mxt->power_suspend.resume = mxt_late_resume;
-	register_power_suspend(&mxt->power_suspend);
+	mxt->early_suspend.suspend = mxt_early_suspend;
+	mxt->early_suspend.resume = mxt_late_resume;
+	register_early_suspend(&mxt->early_suspend);
 #endif
 
 	return 0;
@@ -2252,8 +2254,8 @@ static int __devexit mxt_remove(struct i2c_client *client)
 	debugfs_remove_recursive(mxt->debug_dir);
 
 	device_init_wakeup(&client->dev, 0);
-#if defined(CONFIG_POWERSUSPEND)
-	unregister_power_suspend(&mxt->power_suspend);
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&mxt->early_suspend);
 #endif
 
 	if (mxt != NULL) {

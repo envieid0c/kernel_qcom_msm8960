@@ -29,7 +29,7 @@
 #include <linux/kernel_stat.h>
 #include <linux/percpu.h>
 #include <linux/mutex.h>
-#include <linux/powersuspend.h>
+#include <linux/earlysuspend.h>
 /*
  * dbs is used in this file as a shortform for demandbased switching
  * It helps to keep variable names smaller, simpler
@@ -619,23 +619,23 @@ struct cpufreq_governor cpufreq_gov_lagfree = {
     .owner			= THIS_MODULE,
 };
 
-static void lagfree_power_suspend(struct power_suspend *handler) {
+static void lagfree_early_suspend(struct early_suspend *handler) {
     suspended = 1;
 }
 
-static void lagfree_late_resume(struct power_suspend *handler) {
+static void lagfree_late_resume(struct early_suspend *handler) {
     suspended = 0;
 }
 /*
-static struct power_suspend lagfree_power_suspend = {
-    .suspend = lagfree_power_suspend,
+static struct early_suspend lagfree_power_suspend = {
+    .suspend = lagfree_early_suspend,
     .resume = lagfree_late_resume,
-    .level = POWER_SUSPEND_LEVEL_DISABLE_FB + 1,
+    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 1,
 };
 */
 static int __init cpufreq_gov_dbs_init(void)
 {
-    register_power_suspend(&lagfree_power_suspend);
+    register_early_suspend(&lagfree_power_suspend);
     return cpufreq_register_governor(&cpufreq_gov_lagfree);
 }
 
@@ -644,7 +644,7 @@ static void __exit cpufreq_gov_dbs_exit(void)
     /* Make sure that the scheduled work is indeed not running */
     flush_scheduled_work();
 
-    unregister_power_suspend(&lagfree_power_suspend);
+    unregister_early_suspend(&lagfree_power_suspend);
     cpufreq_unregister_governor(&cpufreq_gov_lagfree);
 }
 

@@ -163,11 +163,11 @@ struct msm_fb_data_type {
 #endif
 
 #ifndef DISABLE_EARLY_SUSPEND
-#ifdef CONFIG_POWESUSPEND
-	struct power_suspend power_suspend;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
 #ifdef CONFIG_FB_MSM_MDDI
-	struct power_suspend mddi_power_suspend;
-	struct power_suspend mddi_ext_power_suspend;
+	struct early_suspend mddi_early_suspend;
+	struct early_suspend mddi_ext_early_suspend;
 #endif
 #endif
 #endif
