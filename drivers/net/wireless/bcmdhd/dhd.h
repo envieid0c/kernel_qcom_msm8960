@@ -5,13 +5,13 @@
  * DHD OS, bus, and protocol modules.
  *
  * Copyright (C) 1999-2012, Broadcom Corporation
- * 
+ *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- * 
+ *
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -19,7 +19,7 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- * 
+ *
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
@@ -211,7 +211,7 @@ typedef struct dhd_pub {
 
 	/* Suspend disable flag and "in suspend" flag */
 	int suspend_disable_flag; /* "1" to disable all extra powersaving during suspend */
-	int in_suspend;			/* flag set to 1 when early suspend called */
+	int in_suspend;			/* flag set to 1 when power suspend called */
 #ifdef PNO_SUPPORT
 	int pno_enable;                 /* pno status : "1" is pno enable */
 	int pno_suspend;		/* pno suspend status : "1" is pno suspended */
@@ -219,7 +219,7 @@ typedef struct dhd_pub {
 	int dtim_skip;         /* dtim skip , default 0 means wake each dtim */
 
 #ifdef PKT_FILTER_SUPPORT
-	int early_suspended;	/* Early suspend status */
+	int power_suspended;	/* Power suspend status */
 	int dhcp_in_progress;	/* DHCP period */
 #endif
 
@@ -374,7 +374,7 @@ typedef enum dhd_attach_states
 	DHD_ATTACH_STATE_THREADS_CREATED = 0x20,
 	DHD_ATTACH_STATE_WAKELOCKS_INIT = 0x40,
 	DHD_ATTACH_STATE_CFG80211 = 0x80,
-	DHD_ATTACH_STATE_EARLYSUSPEND_DONE = 0x100,
+	DHD_ATTACH_STATE_POWERSUSPEND_DONE = 0x100,
 	DHD_ATTACH_STATE_DONE = 0x200
 } dhd_attach_states_t;
 

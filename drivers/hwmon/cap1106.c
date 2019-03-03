@@ -8,7 +8,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/i2c.h>
-#include <linux/earlysuspend.h>
+#include <linux/powersuspend.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>

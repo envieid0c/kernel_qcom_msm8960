@@ -408,7 +408,7 @@ config CPU_FREQ_GOV_SLIM
 config CPU_FREQ_GOV_SMARTASSV2
 	tristate "'smartassV2' cpufreq governor"
 	depends on CPU_FREQ
-	default y
+	default n
 	help
 	  'smartassV2' - a "smart" governor
 	  If in doubt, say N.

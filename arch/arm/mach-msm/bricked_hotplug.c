@@ -24,10 +24,6 @@
 #include <linux/module.h>
 #include <linux/device.h>
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-#include <linux/earlysuspend.h>
-#endif
-
 #ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
 #else
@@ -55,7 +51,7 @@ enum {
     MSM_MPDEC_UP,
 };
 
-#if defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
+#ifdef CONFIG_POWERSUSPEND
 static struct notifier_block notif;
 #endif
 static struct delayed_work hotplug_work;
@@ -337,27 +333,6 @@ static void __ref bricked_hotplug_resume(struct work_struct *work)
     }
 }
 
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void __bricked_hotplug_suspend(struct early_suspend *handler)
-{
-    INIT_DELAYED_WORK(&suspend_work, bricked_hotplug_suspend);
-    queue_delayed_work_on(0, susp_wq, &suspend_work,
-	    msecs_to_jiffies(hotplug.suspend_defer_time * 1000));
-}
-
-static void __ref __bricked_hotplug_resume(struct early_suspend *handler)
-{
-    flush_workqueue(susp_wq);
-    cancel_delayed_work_sync(&suspend_work);
-    queue_work_on(0, susp_wq, &resume_work);
-}
-
-static struct early_suspend bricked_hotplug_early_suspend_driver = {
-    .suspend = __bricked_hotplug_suspend,
-    .resume = __bricked_hotplug_resume,
-};
-#endif
 #ifdef CONFIG_POWERSUSPEND
 static void __bricked_hotplug_suspend(struct power_suspend *handler)
 {
@@ -436,10 +411,6 @@ static int bricked_hotplug_start(void)
 	ret = -ENOMEM;
 	goto err_dev;
     }
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    register_early_suspend(&bricked_hotplug_early_suspend_driver);
-#endif
 #ifdef CONFIG_POWERSUSPEND
     register_power_suspend(&bricked_hotplug_power_suspend_driver);
 #else
@@ -468,7 +439,7 @@ static int bricked_hotplug_start(void)
 		    msecs_to_jiffies(hotplug.startdelay));
 
     return ret;
-#if defined (CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
+#ifdef CONFIG_POWERSUSPEND
 err_susp:
     destroy_workqueue(susp_wq);
 #endif
@@ -495,10 +466,6 @@ static void bricked_hotplug_stop(void)
     cancel_delayed_work_sync(&hotplug_work);
     mutex_destroy(&hotplug.bricked_hotplug_mutex);
     mutex_destroy(&hotplug.bricked_cpu_mutex);
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&bricked_hotplug_early_suspend_driver);
-#endif
 #ifdef CONFIG_POWERSUSPEND
     unregister_power_suspend(&bricked_hotplug_power_suspend_driver);
 #else

@@ -3,7 +3,7 @@
  * arch/arm/mach-msm/fast_hotplug.c
  *
  * Copyright (C) 2014 Basile Maret
- * 
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -26,10 +26,6 @@
 
 #ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
-#endif
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
 #endif
 
 #define FAST_HOTPLUG_ENABLED	0
@@ -187,9 +183,6 @@ extern unsigned long avg_cpu_nr_running(unsigned int cpu);
 #ifdef CONFIG_POWERSUSPEND
 static struct power_suspend hotplug_power_suspend_handler;
 #endif  /* CONFIG_POWERSUSPEND */
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend hotplug_early_suspend_handler;
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
 
 static void plug_in(int online_cpu_count);
 
@@ -441,7 +434,7 @@ static int __ref enable_fast_hotplug(const char *val, const struct kernel_param 
 /*
  * Suspend / Resume
  */
-#if defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
+#ifdef CONFIG_POWERSUSPEND
 static void hotplug_power_suspend(struct power_suspend *h) {
     int cpu;
     if(fast_hotplug_enabled && screen_off_singlecore){
@@ -464,7 +457,7 @@ static void hotplug_power_suspend(struct power_suspend *h) {
     }
 }
 #endif
-#if defined (CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
+#ifdef CONFIG_POWERSUSPEND
 static void hotplug_late_resume(struct power_suspend *h) {
     if(fast_hotplug_enabled){
 #ifdef DEBUG_ENABLED
@@ -488,13 +481,6 @@ static struct power_suspend hotplug_power_suspend_handler = {
 };
 #endif  /* CONFIG_POWERSUSPEND */
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static struct early_suspend hotplug_power_suspend_handler = {
-    .suspend = hotplug_power_suspend,
-    .resume = hotplug_late_resume,
-};
-#endif	/* CONFIG_HAS_EARLYSUSPEND */
-
 /*
  * Initialization of the module
  */
@@ -511,10 +497,6 @@ static int __init hotplug_init(void)
 #ifdef CONFIG_POWERSUSPEND
     register_power_suspend(&hotplug_power_suspend_handler);
 #endif
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    register_early_suspend(&hotplug_early_suspend_handler);
-#endif
-
     queue_delayed_work_on(0, hotplug_wq, &hotplug_work, msecs_to_jiffies(refresh_rate));
 
     pr_info(HOTPLUG_INFO_TAG"Fast hotplug succesfully initialized !");

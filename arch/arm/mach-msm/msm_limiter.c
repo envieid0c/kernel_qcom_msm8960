@@ -21,8 +21,6 @@
 #include <linux/lcd_notify.h>
 #elif defined(CONFIG_POWERSUSPEND)
 #include <linux/powersuspend.h>
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-#include <linux/earlysuspend.h>
 #endif
 
 #define MSM_CPUFREQ_LIMIT_MAJOR		3
@@ -136,8 +134,6 @@ static void msm_limit_resume(struct work_struct *work)
 static void __msm_limit_suspend(void)
 #elif defined(CONFIG_POWERSUSPEND)
 static void __msm_limit_suspend(struct power_suspend *handler)
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-static void __msm_limit_suspend(struct early_suspend *handler)
 #endif
 {
     if (!limit.limiter_enabled)
@@ -152,8 +148,6 @@ static void __msm_limit_suspend(struct early_suspend *handler)
 static void __msm_limit_resume(void)
 #elif defined(CONFIG_POWERSUSPEND)
 static void __msm_limit_resume(struct power_suspend *handler)
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-static void __msm_limit_resume(struct early_suspend *handler)
 #endif
 {
     if (!limit.limiter_enabled)
@@ -184,12 +178,9 @@ static int lcd_notifier_callback(struct notifier_block *nb,
 
     return NOTIFY_OK;
 }
-#elif defined(CONFIG_POWERSUSPEND) || defined(CONFIG_HAS_EARLYSUSPEND)
+#elif defined(CONFIG_POWERSUSPEND)
 #ifdef CONFIG_POWERSUSPEND
 static struct power_suspend msm_limit_power_suspend_driver = {
-#else
-static struct early_suspend msm_limit_early_suspend_driver = {
-    .level = EARLY_SUSPEND_LEVEL_DISABLE_FB + 10,
 #endif
     .suspend = __msm_limit_suspend,
     .resume = __msm_limit_resume,
@@ -220,8 +211,6 @@ static int msm_cpufreq_limit_start(void)
     }
 #elif defined(CONFIG_POWERSUSPEND)
     register_power_suspend(&msm_limit_power_suspend_driver);
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-    register_early_suspend(&msm_limit_early_suspend_driver);
 #endif
 
     for_each_possible_cpu(cpu)
@@ -261,8 +250,6 @@ static void msm_cpufreq_limit_stop(void)
     limit.notif.notifier_call = NULL;
 #elif defined(CONFIG_POWERSUSPEND)
     unregister_power_suspend(&msm_limit_power_suspend_driver);
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-    unregister_early_suspend(&msm_limit_early_suspend_driver);
 #endif
     destroy_workqueue(limiter_wq);
 }
