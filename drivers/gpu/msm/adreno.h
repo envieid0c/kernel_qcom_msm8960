@@ -41,6 +41,7 @@
 #define KGSL_CMD_FLAGS_INTERNAL_ISSUE   BIT(1)
 #define KGSL_CMD_FLAGS_WFI              BIT(2)
 #define KGSL_CMD_FLAGS_PWRON_FIXUP      BIT(3)
+#define KGSL_CMD_FLAGS_MEMLIST          BIT(5)
 
 /* Command identifiers */
 #define KGSL_CONTEXT_TO_MEM_IDENTIFIER	0x2EADBEEF
