@@ -14,7 +14,7 @@
 #include <linux/interrupt.h>
 #include <linux/of.h>
 #include <linux/slab.h>
-
+#include <linux/display_state.h>
 #include "mdss_dsi.h"
 
 #ifdef CONFIG_POWERSUSPEND
@@ -32,14 +32,23 @@ static int num_of_on_cmds;
 static int num_of_off_cmds;
 static char *on_cmds, *off_cmds;
 
+bool display_on = true;
+
+	bool is_display_on()
+{
+	return display_on;
+}
+
 static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 {
 	struct mipi_panel_info *mipi;
 
 	mipi  = &pdata->panel_info.mipi;
-
+#ifdef DEBUG_ENABLED
 	pr_debug("%s:%d, debug info (mode) : %d\n", __func__, __LINE__,
 		 mipi->mode);
+#endif
+	display_on = true;
 
 	if (mipi->mode == DSI_VIDEO_MODE) {
 		mdss_dsi_cmds_tx(pdata, &dsi_panel_tx_buf, dsi_panel_on_cmds,
@@ -57,14 +66,18 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 	struct mipi_panel_info *mipi;
 
 	mipi  = &pdata->panel_info.mipi;
-
+#ifdef DEBUG_ENABLED
 	pr_debug("%s:%d, debug info\n", __func__, __LINE__);
+#endif
+	display_on = false;
 
 	if (mipi->mode == DSI_VIDEO_MODE) {
 		mdss_dsi_cmds_tx(pdata, &dsi_panel_tx_buf, dsi_panel_off_cmds,
 			num_of_off_cmds);
 	} else {
+#ifdef DEBUG_ENABLED
 		pr_debug("%s:%d, CMD mode not supported", __func__, __LINE__);
+#endif
 		return -EINVAL;
 	}
 
@@ -306,8 +319,9 @@ static int __devinit mdss_dsi_panel_probe(struct platform_device *pdev)
 		pr_err("%s: parent device missing\n", __func__);
 		return -ENODEV;
 	}
-
+#ifdef DEBUG_ENABLED
 	pr_debug("%s:%d, debug info id=%d", __func__, __LINE__, pdev->id);
+#endif
 	if (!pdev->dev.of_node)
 		return -ENODEV;
 
