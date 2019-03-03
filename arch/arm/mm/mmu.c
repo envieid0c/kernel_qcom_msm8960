@@ -1419,7 +1419,6 @@ static void __init map_lowmem(void)
 	map.type = MT_MEMORY;
 
 	create_mapping(&map, true);
-//	reserve_virtual_lowmem(start, end);
 #endif
 
 	reserve_virtual_lowmem(start, end);
@@ -1444,7 +1443,6 @@ static void __init map_lowmem(void)
 		vm->addr = (void *)(vaddr & PAGE_MASK);
 		vm->size = PAGE_ALIGN(length + (vaddr & ~PAGE_MASK));
 		vm->flags = VM_LOWMEM | VM_ARM_STATIC_MAPPING;
-		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
 		vm->flags |= VM_ARM_MTYPE(type);
 		vm->caller = map_lowmem;
 		vm_area_add_early(vm++);
