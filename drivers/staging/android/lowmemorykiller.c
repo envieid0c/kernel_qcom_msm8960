@@ -525,7 +525,7 @@ DEFINE_SPINLOCK(lmk_lock);
 struct rb_root tasks_scoreadj = RB_ROOT;
 void add_2_adj_tree(struct task_struct *task)
 {
-	struct rb_node **link = &tasks_scoreadj.rb_node;
+	struct rb_node **link;
 	struct rb_node *parent = NULL;
 	struct task_struct *task_entry;
 	s64 key = task->signal->oom_score_adj;
@@ -533,6 +533,7 @@ void add_2_adj_tree(struct task_struct *task)
 	 * Find the right place in the rbtree:
 	 */
 	spin_lock(&lmk_lock);
+	link =  &tasks_scoreadj.rb_node;
 	while (*link) {
 		parent = *link;
 		task_entry = rb_entry(parent, struct task_struct, adj_node);
