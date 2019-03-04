@@ -14,6 +14,10 @@
  *
  *  v1.4 - add a hybrid-kernel mode, accepting both kernel hooks (first wins)
  *
+ *  v1.5 - fix hybrid-kernel mode cannot be set through sysfs
+ *
+ *  v1.6 - do only run state change if change actually requests a new state
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -140,23 +144,27 @@ void set_power_suspend_state(int new_state)
 {
     unsigned long irqflags;
 
-    spin_lock_irqsave(&state_lock, irqflags);
-    if (state == POWER_SUSPEND_INACTIVE && new_state == POWER_SUSPEND_ACTIVE) {
-	#ifdef CONFIG_POWERSUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] state activated.\n");
-	#endif
-	state = new_state;
-	power_suspended = true;
-	queue_work(suspend_work_queue, &power_suspend_work);
-    } else if (state == POWER_SUSPEND_ACTIVE && new_state == POWER_SUSPEND_INACTIVE) {
-	#ifdef CONFIG_POWERSUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] state deactivated.\n");
-	#endif
-	state = new_state;
-	power_suspended = false;
-	queue_work(suspend_work_queue, &power_resume_work);
+    if (state != new_state) {
+	spin_lock_irqsave(&state_lock, irqflags);
+	if (state == POWER_SUSPEND_INACTIVE && new_state == POWER_SUSPEND_ACTIVE) {
+		#ifdef CONFIG_POWERSUSPEND_DEBUG
+		pr_info("[POWERSUSPEND] state activated.\n");
+		#endif
+		state = new_state;
+		queue_work(suspend_work_queue, &power_suspend_work);
+	} else if (state == POWER_SUSPEND_ACTIVE && new_state == POWER_SUSPEND_INACTIVE) {
+		#ifdef CONFIG_POWERSUSPEND_DEBUG
+		pr_info("[POWERSUSPEND] state deactivated.\n");
+		#endif
+		queue_work(suspend_work_queue, &power_resume_work);
+	}
+	spin_unlock_irqrestore(&state_lock, irqflags);
     }
-    spin_unlock_irqrestore(&state_lock, irqflags);
+    #ifdef CONFIG_POWERSUSPEND_DEBUG
+    else {
+	pr_info("[POWERSUSPEND] state change requested, but unchanged ?! Ignored !\n");
+    }
+    #endif
 }
 
 void set_power_suspend_state_autosleep_hook(int new_state)
