@@ -324,6 +324,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		tsk = pick_next_from_adj_tree(tsk)) {
 #else
 	for_each_process(tsk) {
+#endif
 		struct task_struct *p;
 		int oom_score_adj;
 
