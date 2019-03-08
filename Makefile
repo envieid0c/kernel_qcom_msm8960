@@ -347,17 +347,19 @@ KALLSYMS	= scripts/kallsyms
 PERL		= perl
 CHECK		= sparse
 
+NEW := -mneon-for-64bits -mpure-code -floop-strip-mine -faggressive-loop-optimizations -flto-compression-level=9 \
+		  -fno-unsafe-math-optimizations -funsafe-loop-optimizations -fcrossjumping
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
 MODFLAGS	= -DMODULE -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 \
 		  -marm -march=armv7-a -mfpu=neon -ftree-vectorize -mvectorize-with-neon-quad -mfpu=neon-vfpv4 \
 		  -fgraphite -fgraphite-identity -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange \
-		  -floop-strip-mine -floop-block -floop-nest-optimize -floop-parallelize-all -flto
+		  -floop-strip-mine -floop-block -floop-nest-optimize -floop-parallelize-all -flto -mthumb $(NEW)
 
-CFLAGS_MODULE   = $(MODFLAGS)
-AFLAGS_MODULE   = $(MODFLAGS)
+CFLAGS_MODULE   = $(MODFLAGS) $(NEW)
+AFLAGS_MODULE   = $(MODFLAGS) $(NEW)
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL	= -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15
+CFLAGS_KERNEL	= -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr -ffast-math -fsingle-precision-constant -mtune=cortex-a15 -floop-strip-mine -faggressive-loop-optimizations
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -380,7 +382,7 @@ GRAPHITE_FLAGS := -fgraphite -fgraphite-identity -floop-flatten -floop-paralleli
 		    -ftree-coalesce-vars -ftree-loop-if-convert -ftree-loop-distribution \
 		    -floop-nest-optimize -floop-parallelize-all -flto -mthumb
 CFLAGS_MODULO = -fmodulo-sched -fmodulo-sched-allow-regmoves
-KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO) $(GRAPHITE_FLAGS)
+KERNEL_MODS  = $(CFLAGS_A15) $(CFLAGS_MODULO) $(GRAPHITE_FLAGS) $(NEW)
 
 GCC5 = -Wno-logical-not-parentheses
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
@@ -390,12 +392,12 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
 		   -funsafe-math-optimizations \
-		    $(KERNEK_MODS) $(GCC5) \
+		    $(KERNEK_MODS) $(GCC5)  \
 		   -Wno-error=maybe-uninitialized -Wno-bool-compare -Wno-misleading-indentation \
                -Wno-format -Wno-logical-not-parentheses -Wno-int-in-bool-context -Wno-memset-elt-size \
                     -Wno-parentheses -Wno-bool-operation -Wno-duplicate-decl-specifier -Wno-stringop-overflow \
 		    -Wno-format-truncation -Wno-format-overflow -fno-modulo-sched -Wno-error=switch-unreachable \
-		    -Wno-switch-unreachable
+		    -Wno-switch-unreachable -floop-strip-mine -faggressive-loop-optimizations
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
