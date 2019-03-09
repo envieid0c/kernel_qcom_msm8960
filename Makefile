@@ -388,7 +388,7 @@ GCC5 = -Wno-logical-not-parentheses
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
+		   -Wno-format-security -Wno-attributes \
 		   -fno-delete-null-pointer-checks \
 		   -ftree-vectorize -mno-unaligned-access \
 		   -funsafe-math-optimizations \
