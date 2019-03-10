@@ -23,6 +23,8 @@
 #if defined(CONFIG_KEXEC_HARDBOOT)
 #if defined(CONFIG_MACH_APQ8064_FLO)
 #define KEXEC_HB_PAGE_ADDR		UL(0x88C00000)
+#elif defined(CONFIG_MACH_APQ8064_MAKO)
+#define KEXEC_HB_PAGE_ADDR		UL(0x88600000)
 #else
 #error "Adress for kexec hardboot page not defined"
 #endif
@@ -62,14 +64,14 @@ extern unsigned long ebi1_phys_offset;
 #if (defined(CONFIG_SPARSEMEM) && defined(CONFIG_VMSPLIT_3G))
 
 #define __phys_to_virt(phys)				\
-	((phys) >= EBI1_PHYS_OFFSET ?			\
-	(phys) - EBI1_PHYS_OFFSET + EBI1_PAGE_OFFSET :	\
-	(phys) - EBI0_PHYS_OFFSET + EBI0_PAGE_OFFSET)
+    ((phys) >= EBI1_PHYS_OFFSET ?			\
+    (phys) - EBI1_PHYS_OFFSET + EBI1_PAGE_OFFSET :	\
+    (phys) - EBI0_PHYS_OFFSET + EBI0_PAGE_OFFSET)
 
 #define __virt_to_phys(virt)				\
-	((virt) >= EBI1_PAGE_OFFSET ?			\
-	(virt) - EBI1_PAGE_OFFSET + EBI1_PHYS_OFFSET :	\
-	(virt) - EBI0_PAGE_OFFSET + EBI0_PHYS_OFFSET)
+    ((virt) >= EBI1_PAGE_OFFSET ?			\
+    (virt) - EBI1_PAGE_OFFSET + EBI1_PHYS_OFFSET :	\
+    (virt) - EBI0_PAGE_OFFSET + EBI0_PHYS_OFFSET)
 
 #endif
 #endif
@@ -103,6 +105,10 @@ extern void l2x0_cache_sync(void);
 
 #if defined(CONFIG_ARCH_MSM8X60) || defined(CONFIG_ARCH_MSM8960)
 extern void store_ttbr0(void);
+#ifdef CONFIG_LGE_CRASH_HANDLER
+extern void store_ctrl(void);
+extern void store_dac(void);
+#endif
 #define finish_arch_switch(prev)	do { store_ttbr0(); } while (0)
 #endif
 
@@ -118,14 +124,14 @@ void find_membank0_hole(void);
 #define MEMBANK1_PAGE_OFFSET (MEMBANK0_PAGE_OFFSET + (membank0_size))
 
 #define __phys_to_virt(phys)				\
-	((MEMBANK1_PHYS_OFFSET && ((phys) >= MEMBANK1_PHYS_OFFSET)) ?	\
-	(phys) - MEMBANK1_PHYS_OFFSET + MEMBANK1_PAGE_OFFSET :	\
-	(phys) - MEMBANK0_PHYS_OFFSET + MEMBANK0_PAGE_OFFSET)
+    ((MEMBANK1_PHYS_OFFSET && ((phys) >= MEMBANK1_PHYS_OFFSET)) ?	\
+    (phys) - MEMBANK1_PHYS_OFFSET + MEMBANK1_PAGE_OFFSET :	\
+    (phys) - MEMBANK0_PHYS_OFFSET + MEMBANK0_PAGE_OFFSET)
 
 #define __virt_to_phys(virt)				\
-	((MEMBANK1_PHYS_OFFSET && ((virt) >= MEMBANK1_PAGE_OFFSET)) ?	\
-	(virt) - MEMBANK1_PAGE_OFFSET + MEMBANK1_PHYS_OFFSET :	\
-	(virt) - MEMBANK0_PAGE_OFFSET + MEMBANK0_PHYS_OFFSET)
+    ((MEMBANK1_PHYS_OFFSET && ((virt) >= MEMBANK1_PAGE_OFFSET)) ?	\
+    (virt) - MEMBANK1_PAGE_OFFSET + MEMBANK1_PHYS_OFFSET :	\
+    (virt) - MEMBANK0_PAGE_OFFSET + MEMBANK0_PHYS_OFFSET)
 #endif
 
 /*
@@ -140,7 +146,7 @@ void find_membank0_hole(void);
 
 #define EXPORT_COMPAT(com)	\
 static char *__CONCAT(__compat_, __LINE__)  __used \
-	__attribute((__section__(".exportcompat.init"))) = com
+    __attribute((__section__(".exportcompat.init"))) = com
 
 extern char *__compat_exports_start[];
 extern char *__compat_exports_end[];
