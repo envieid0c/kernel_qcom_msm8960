@@ -1,1 +1,0 @@
-../../arm-envieidoc_toolchain-linux-gnueabihf/sysroot/lib/libstdc++.so.6.0.20-gdb.py
